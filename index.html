@@ -1,0 +1,2681 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shopprimer kalkulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+        body { font-family: 'Inter', system-ui, sans-serif; background-color: #ffffff; color: #000000; }
+        
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+
+        .locked-ui {
+            filter: blur(6px);
+            pointer-events: none;
+            opacity: 0.6;
+            user-select: none;
+            transition: filter 0.3s ease, opacity 0.3s ease;
+        }
+
+        @media print {
+            @page { size: A4 landscape; margin: 10mm; }
+            body { background-color: white !important; font-size: 10pt !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            
+            header, .print-hide, #tab-daily, #tab-calc, #tab-costs, #tab-db, #tab-colors, #tab-history, #tab-users, #tab-projects, #tab-indusco, #loginOverlay, #initialLoadOverlay, #editInduscoModal, #customDialogOverlay, #configDailyPaintsModal { display: none !important; }
+            
+            body.print-daily #view-calc, body.print-daily #view-costs, body.print-daily #view-history, body.print-daily #view-indusco, body.print-daily #view-db, body.print-daily #view-colors, body.print-daily #view-users, body.print-daily #view-projects { display: none !important; }
+            body.print-daily #view-daily { display: block !important; border: none !important; margin-top: 0 !important; }
+            body.print-daily #view-daily .print-hide { display: none !important; }
+            body.print-daily #dailyPaintSidebarWrapper { display: none !important; }
+            body.print-daily #view-daily > div { flex-direction: column !important; height: auto !important;}
+            body.print-daily #view-daily .overflow-auto { overflow: visible !important; max-height: none !important;}
+            
+            #view-calc, #view-costs { display: block !important; border: none !important; }
+            #view-calc > div:first-child, #view-costs > div:first-child { display: none !important; }
+            #view-db, #view-colors, #view-history, #view-users, #view-projects, #view-indusco, #view-daily { display: none !important; }
+            #resultsSection { display: flex !important; border: none !important; margin-top: 0 !important; }
+            
+            body.print-history #view-calc, body.print-history #view-costs { display: none !important; }
+            body.print-history #view-history { display: block !important; border: none !important; }
+            body.print-history #view-history .print-hide { display: none !important; }
+            body.print-history .protocol-header-history { display: block !important; }
+
+            .page-break { page-break-before: always; break-before: page; margin-top: 20px !important;}
+            .break-inside-avoid { page-break-inside: avoid; break-inside: avoid; }
+            
+            .overflow-x-auto, .max-h-[500px] { overflow: visible !important; max-height: none !important; }
+            .whitespace-nowrap { white-space: normal !important; }
+            table { width: 100% !important; table-layout: auto !important; border-collapse: collapse !important; }
+            th, td { font-size: 8pt !important; padding: 4px 2px !important; word-wrap: break-word !important; border: 1px solid #000000 !important; }
+            th { background-color: #ffffff !important; color: #000000 !important; }
+            
+            input[type="number"], input[type="text"], select, input[type="date"] { border: none !important; background: transparent !important; padding: 0 !important; font-weight: bold; color: inherit !important; width: auto !important;}
+            
+            .protocol-header { display: block !important; border-bottom: 2px solid #000000; padding-bottom: 10px; margin-bottom: 20px; }
+            .protocol-title { font-size: 18px; font-weight: bold; text-transform: uppercase; color: #000000; display: flex; align-items: center; gap: 10px;}
+            .protocol-meta { font-size: 11px; color: #000000; margin-top: 4px; }
+            .protocol-footer { display: flex !important; justify-content: space-between; margin-top: 40px; padding: 0 40px; page-break-inside: avoid; }
+            .sign-line { border-top: 1px solid #000000; width: 180px; text-align: center; padding-top: 5px; font-size: 11px; font-weight: bold; text-transform: uppercase; color: #000000;}
+            .protocol-author { font-size: 11px; font-weight: normal; text-transform: none; display: block; min-height: 16px; margin-top: 4px; }
+        }
+        .protocol-header, .protocol-footer, .protocol-header-history { display: none; }
+        .protocol-author { font-size: 11px; font-weight: normal; text-transform: none; display: block; min-height: 16px; margin-top: 4px; }
+    </style>
+</head>
+<body class="p-2 md:p-4">
+
+    <!-- DATALISTS DO PODPOWIEDZI W POLACH -->
+    <datalist id="dl-shopprimer"></datalist>
+    <datalist id="dl-typy">
+        <option value="Blacha"></option>
+        <option value="Profile HP"></option>
+        <option value="Kątowniki L"></option>
+        <option value="Płaskowniki FB"></option>
+        <option value="Ceowniki UNP"></option>
+        <option value="Teowniki T"></option>
+        <option value="Profile IPE"></option>
+        <option value="Profile HEB-HEA"></option>
+        <option value="Profile półokrągłe HR"></option>
+        <option value="Rury kwadratowe RHS"></option>
+        <option value="Rury"></option>
+        <option value="Pręty okrągłe (Ø)"></option>
+    </datalist>
+    <datalist id="dl-projects"></datalist>
+    <datalist id="dl-gatunki"></datalist>
+    <datalist id="dl-profile"></datalist>
+
+    <!-- CUSTOM DIALOGS MODAL -->
+    <div id="customDialogOverlay" class="fixed inset-0 bg-gray-600 bg-opacity-50 z-[3000] hidden items-center justify-center print-hide">
+        <div class="bg-white border-2 border-black p-6 w-full max-w-sm shadow-2xl flex flex-col">
+            <h3 id="customDialogTitle" class="text-lg font-bold uppercase border-b-2 border-black pb-2 mb-4 text-black flex items-center gap-2">
+                <svg class="w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                Komunikat
+            </h3>
+            <p id="customDialogMessage" class="text-sm font-bold text-gray-800 mb-6"></p>
+            <input type="text" id="customDialogInput" class="w-full border border-black p-2 mb-6 hidden outline-none focus:bg-yellow-50 text-sm font-bold">
+            <div class="flex justify-end gap-3" id="customDialogButtons"></div>
+        </div>
+    </div>
+
+    <!-- INITIAL LOAD OVERLAY -->
+    <div id="initialLoadOverlay" class="fixed inset-0 bg-gray-200 z-[2000] hidden flex-col items-center justify-center print-hide">
+        <div class="bg-white border-4 border-black p-8 max-w-md text-center shadow-2xl">
+            <h2 class="text-2xl font-bold text-black uppercase mb-4">Wymagany plik danych</h2>
+            <p class="text-sm font-bold text-gray-700 mb-6">Aby rozpocząć pracę, musisz najpierw wczytać główny plik bazy projektu (status.json).</p>
+            <button onclick="loadProjectAction()" class="w-full bg-black text-white font-bold uppercase py-3 border-2 border-black hover:bg-gray-800 transition">
+                Wczytaj plik z dysku
+            </button>
+            <input type="file" id="loadProjectInput" accept=".json" onchange="loadProjectFallback(event)" class="hidden">
+        </div>
+    </div>
+
+    <!-- EKRAN LOGOWANIA -->
+    <div id="loginOverlay" class="fixed inset-0 bg-gray-100 z-[1000] hidden flex-col items-center justify-center print-hide">
+        <div class="bg-white border-2 border-black p-8 w-full max-w-sm shadow-2xl">
+            <div class="flex items-center justify-center mb-6 border-b-2 border-black pb-4">
+                <svg class="w-8 h-8 text-black mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                <h2 class="text-2xl font-bold text-black uppercase">Logowanie</h2>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-black mb-1 uppercase">Login</label>
+                    <input type="text" id="loginUsername" class="w-full border-2 border-black p-2.5 text-sm outline-none focus:bg-gray-100 transition-colors" autocomplete="username">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-black mb-1 uppercase">Hasło</label>
+                    <input type="password" id="loginPassword" class="w-full border-2 border-black p-2.5 text-sm outline-none focus:bg-gray-100 transition-colors" onkeypress="if(event.key === 'Enter') handleLogin()" autocomplete="current-password">
+                </div>
+                <button onclick="handleLogin()" class="w-full bg-black text-white font-bold uppercase py-3 border-2 border-black hover:bg-gray-800 transition mt-6">
+                    Zaloguj się
+                </button>
+                <div id="loginError" class="hidden text-white bg-black border-2 border-black p-2 font-bold text-xs text-center mt-4 uppercase">
+                    Błędny login lub hasło!
+                </div>
+            </div>
+            <div class="mt-6 text-center text-[10px] text-gray-500 font-bold uppercase">
+                Shopprimer Kalkulator System
+                <div class="text-[8px] font-normal normal-case mt-1 tracking-wider text-gray-400">design by Piotr Pallach &copy; 2026</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL EDYCJI INDUSCO -->
+    <div id="editInduscoModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 z-[1050] hidden items-center justify-center print-hide">
+        <div class="bg-white border-2 border-black p-6 w-full max-w-sm shadow-2xl relative flex flex-col">
+            <h2 class="text-lg font-bold text-black uppercase border-b-2 border-black pb-2 mb-4">Edycja Zdarzenia</h2>
+            <div class="space-y-3 mb-6">
+                <div>
+                    <label class="block text-xs font-bold text-black mb-1 uppercase">Data</label>
+                    <input type="date" id="editInduscoDate" class="w-full border border-black p-1.5 text-sm outline-none bg-white">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-black mb-1 uppercase">Towar</label>
+                    <select id="editInduscoPaint" class="w-full border border-black p-1.5 text-sm outline-none bg-white"></select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-black mb-1 uppercase">Akcja</label>
+                    <select id="editInduscoAction" class="w-full border border-black p-1.5 text-sm outline-none bg-white">
+                        <option value="dostawa">Wydanie</option>
+                        <option value="utylizacja">Utylizacja / Zniszczenie</option>
+                        <option value="remanent">Remanent</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-black mb-1 uppercase">Ilość [L]</label>
+                    <input type="number" id="editInduscoAmount" step="0.1" class="w-full border border-black p-1.5 text-sm outline-none bg-white">
+                </div>
+            </div>
+            <div class="flex justify-end gap-3 shrink-0">
+                <button onclick="closeEditInduscoModal()" class="bg-gray-200 text-black border border-black hover:bg-gray-300 font-bold py-2 px-4 uppercase text-sm transition">Anuluj</button>
+                <button onclick="saveEditIndusco()" class="bg-black text-white border border-black hover:bg-gray-800 font-bold py-2 px-4 uppercase text-sm transition shadow-md">Zapisz Zmiany</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL KONFIGURACJI MENU FARB -->
+    <div id="configDailyPaintsModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 z-[1050] hidden items-center justify-center print-hide">
+        <div class="bg-white border-2 border-black p-6 w-full max-w-sm shadow-2xl relative flex flex-col max-h-[90vh]">
+            <h2 class="text-lg font-bold text-black uppercase border-b-2 border-black pb-2 mb-4">Wybierz widoczne farby</h2>
+            <div id="configDailyPaintsList" class="overflow-y-auto space-y-2 mb-4 flex-1 max-h-64"></div>
+            <div class="flex justify-end gap-3 shrink-0">
+                <button onclick="document.getElementById('configDailyPaintsModal').classList.add('hidden'); document.getElementById('configDailyPaintsModal').classList.remove('flex');" class="bg-gray-200 text-black border border-black hover:bg-gray-300 font-bold py-2 px-4 uppercase text-sm transition">Anuluj</button>
+                <button onclick="saveDailyPaintsConfig()" class="bg-black text-white border border-black hover:bg-gray-800 font-bold py-2 px-4 uppercase text-sm transition shadow-md">Zapisz</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN APP CONTAINER -->
+    <div id="mainAppContainer" class="w-full mx-auto space-y-4 locked-ui">
+        <!-- HEADER -->
+        <header class="bg-white border border-black p-4 flex flex-col md:flex-row justify-between items-center gap-3 rounded-none">
+            <div>
+                <h1 class="text-xl md:text-2xl font-bold text-black flex items-center gap-2 uppercase tracking-wide">
+                    SHOPPRIMER <span class="bg-black text-white px-2 py-0.5 text-sm ml-2">EXCEL MODE</span>
+                    <span id="welcomeMessage" class="hidden text-sm font-normal normal-case text-gray-600 ml-2 print-hide">
+                        WITAJ: <span id="welcomeName" class="font-bold text-black uppercase"></span>
+                    </span>
+                </h1>
+            </div>
+            <div class="flex flex-wrap gap-2 print-hide">
+                <button onclick="handleLogout()" class="bg-white border border-red-600 text-red-600 hover:bg-red-600 hover:text-white px-3 py-2 text-xs font-bold transition flex items-center gap-1.5 uppercase ml-2">
+                    WYLOGUJ
+                </button>
+            </div>
+        </header>
+
+        <!-- ZAKŁADKI -->
+        <div class="flex flex-wrap items-end space-x-1 border-b-2 border-black mt-2 print-hide px-1 gap-y-1 relative" id="mainTabsContainer">
+            <button id="tab-daily" onclick="switchTab('daily')" class="px-2 py-1.5 border-2 border-black border-b-0 bg-white text-black text-xs font-bold focus:outline-none whitespace-nowrap z-10">
+                ROZLICZENIE DZIENNE
+            </button>
+            <button id="tab-calc" onclick="switchTab('calc')" class="px-2 py-1.5 border-2 border-transparent hover:border-black border-b-0 text-black bg-white text-xs font-bold focus:outline-none whitespace-nowrap z-10">
+                KALKULACJA
+            </button>
+            <button id="tab-history" onclick="switchTab('history')" class="px-2 py-1.5 border-2 border-transparent hover:border-black border-b-0 text-black bg-white text-xs font-bold focus:outline-none whitespace-nowrap z-10">
+                ZESTAWIENIE KALKULACJI
+            </button>
+            <button id="tab-indusco" onclick="switchTab('indusco')" class="px-2 py-1.5 border-2 border-transparent hover:border-black border-b-0 text-black bg-white text-xs font-bold focus:outline-none whitespace-nowrap z-10">
+                SHOPPRIMER
+            </button>
+            <button id="tab-projects" onclick="switchTab('projects')" class="px-2 py-1.5 border-2 border-transparent hover:border-black border-b-0 text-black bg-white text-xs font-bold focus:outline-none whitespace-nowrap z-10">
+                PROJEKTY
+            </button>
+            
+            <!-- MENU ROZWIJANE DLA POZOSTAŁYCH ZAKŁADEK -->
+            <div class="relative inline-block z-20">
+                <button id="btnMoreTabs" onclick="toggleMoreTabs()" class="px-3 py-1.5 border-2 border-transparent hover:border-black border-b-0 text-black bg-white text-xs font-bold focus:outline-none whitespace-nowrap mb-[1px]">
+                    ...
+                </button>
+                
+                <div id="moreTabsMenu" class="hidden absolute left-0 top-full mt-[2px] bg-white border-2 border-black shadow-xl flex flex-col min-w-[150px]">
+                    <button id="tab-db" onclick="switchTab('db'); toggleMoreTabs(false)" class="px-3 py-2 text-left hover:bg-gray-200 text-black text-xs font-bold focus:outline-none whitespace-nowrap border-b border-gray-200">
+                        BAZA PROFILI
+                    </button>
+                    <button id="tab-colors" onclick="switchTab('colors'); toggleMoreTabs(false)" class="px-3 py-2 text-left hover:bg-gray-200 text-black text-xs font-bold focus:outline-none whitespace-nowrap border-b border-gray-200">
+                        KOLORYSTYKA
+                    </button>
+                    <button id="tab-costs" onclick="switchTab('costs'); toggleMoreTabs(false)" class="px-3 py-2 text-left hover:bg-gray-200 text-black text-xs font-bold focus:outline-none whitespace-nowrap border-b border-gray-200">
+                        WYDAJNOŚĆ
+                    </button>
+                    <button id="tab-users" onclick="switchTab('users'); toggleMoreTabs(false)" class="px-3 py-2 text-left hover:bg-gray-200 text-black text-xs font-bold focus:outline-none whitespace-nowrap">
+                        USTAWIENIA
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- WIDOK: ROZLICZENIE DZIENNE -->
+        <div id="view-daily" class="space-y-4 block mt-4">
+            <div class="flex flex-col md:flex-row gap-4 h-[calc(100vh-220px)] min-h-[500px]">
+                <!-- Sidebar Farb -->
+                <div id="dailyPaintSidebarWrapper" class="w-full md:w-56 bg-white border border-black flex-shrink-0 flex flex-col print-hide transition-all duration-300">
+                    <div class="bg-gray-100 p-2 font-bold text-sm border-b border-black flex justify-between items-center gap-2">
+                        <span class="uppercase whitespace-nowrap">MENU FARB</span>
+                        <div class="flex items-center gap-1">
+                            <button onclick="openConfigDailyPaints()" class="border border-black px-1.5 py-0.5 bg-white hover:bg-gray-200 text-xs font-bold" title="Konfiguruj widoczne farby">⚙️</button>
+                            <button onclick="toggleDailySidebar()" class="border border-black px-2 py-0.5 bg-white hover:bg-gray-200 text-xs font-bold" title="Zamknij menu">X</button>
+                        </div>
+                    </div>
+                    <div class="flex-1 overflow-y-auto" id="dailyPaintSidebar"></div>
+                </div>
+
+                <!-- Główna zawartość Rozliczenia -->
+                <div class="flex-1 bg-white border border-black flex flex-col overflow-hidden">
+                    <div class="p-3 border-b border-black flex flex-wrap justify-between items-center bg-gray-50 gap-2 print-hide">
+                        <div class="flex items-center gap-4">
+                            <button onclick="toggleDailySidebar()" class="border border-black px-3 py-1 bg-yellow-400 hover:bg-yellow-500 text-black font-bold text-xs uppercase shadow-sm transition-colors flex items-center gap-1">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                                LISTA FARB
+                            </button>
+                            <h2 id="dailySelectedPaintTitle" class="text-lg font-bold text-blue-600 uppercase tracking-wider">WYBIERZ FARBĘ</h2>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <label class="text-xs font-bold uppercase">POKAŻ MIESIĄC:</label>
+                            <input type="month" id="dailyFilterMonth" onchange="renderDailyLedger()" class="border border-black p-1 text-xs outline-none bg-white">
+                            <button onclick="document.getElementById('dailyFilterMonth').value=''; renderDailyLedger();" class="border border-black px-3 py-1 bg-white font-bold text-xs uppercase shadow-sm hover:bg-gray-200">WSZYSTKO</button>
+                            <button onclick="printDailyLedger()" class="bg-black text-white px-3 py-1 font-bold text-xs uppercase shadow-md hover:bg-gray-800 ml-2">DRUKUJ (PDF)</button>
+                        </div>
+                    </div>
+                    <div class="overflow-auto flex-1 p-0">
+                        <table class="w-full text-center text-xs whitespace-nowrap bg-white">
+                            <thead class="bg-gray-100 text-black font-bold uppercase sticky top-0 border-b-2 border-black z-10">
+                                <tr>
+                                    <th class="px-2 py-3 border-r border-black">DATA</th>
+                                    <th class="px-2 py-3 border-r border-black">JEDNOSTKA</th>
+                                    <th class="px-2 py-3 border-r border-black text-green-700">WYDANIE [L]</th>
+                                    <th class="px-2 py-3 border-r border-black text-red-600">UTYLIZACJA [L]</th>
+                                    <th class="px-2 py-3 border-r border-black">ZUŻYCIE [L]</th>
+                                    <th class="px-2 py-3 border-r border-black bg-yellow-100">POZOSTAŁO [L]</th>
+                                    <th class="px-2 py-3 border-r border-black text-blue-700">ILOŚĆ M2</th>
+                                    <th class="px-2 py-3 border-r border-black">RODZAJ MATERIAŁU</th>
+                                    <th class="px-2 py-3 border-r border-black">KALKULACJA</th>
+                                    <th class="px-2 py-3 print-hide">AKCJE</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dailyTableBody" class="divide-y divide-black bg-white"></tbody>
+                            <tfoot class="bg-gray-100 font-bold sticky bottom-0 border-t-2 border-black z-10" id="dailyTableFoot"></tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- WIDOK: KALKULATOR -->
+        <div id="view-calc" class="space-y-4 hidden mt-4">
+            <div id="previewBanner" class="hidden bg-gray-200 border border-black p-3 flex justify-between items-center print-hide">
+                <span class="font-bold text-black text-sm uppercase">TRYB PODGLĄDU KALKULACJI Z HISTORII (TYLKO DO ODCZYTU I WYDRUKU)</span>
+                <button onclick="exitPreviewMode()" class="bg-black text-white px-4 py-1.5 font-bold text-xs uppercase hover:bg-gray-800 transition">Zakończ podgląd</button>
+            </div>
+
+            <div id="addFormContainer" class="bg-white p-2 border border-black print-hide">
+                <h2 class="text-sm font-bold text-black mb-1.5 border-b border-black pb-0.5 uppercase">Dodaj element(y)</h2>
+                <div class="space-y-1.5">
+                    <div class="flex flex-wrap gap-1.5 items-end">
+                        <div class="w-full sm:w-[130px]">
+                            <label class="block text-[10px] font-bold text-black mb-0.5 uppercase">Projekt *</label>
+                            <select id="formJednostka" class="w-full border border-black p-1 text-xs outline-none bg-yellow-50 focus:bg-white"></select>
+                        </div>
+                        <div class="w-full sm:w-[110px]">
+                            <label class="block text-[10px] font-bold text-black mb-0.5 uppercase">Shopprimer</label>
+                            <select id="formFarba" class="w-full border border-black p-1 text-xs outline-none bg-white"></select>
+                        </div>
+                        <div class="w-full sm:w-[120px]">
+                            <label class="block text-[10px] font-bold text-black mb-0.5 uppercase">Typ elementu</label>
+                            <select id="formTyp" onchange="toggleFormFields()" class="w-full border border-black p-1 text-xs outline-none bg-white">
+                                <option value="Blacha">Blacha</option>
+                                <option value="Profile HP">Profile HP (Bulb)</option>
+                                <option value="Kątowniki L">Kątowniki L</option>
+                                <option value="Płaskowniki FB">Płaskowniki FB</option>
+                                <option value="Ceowniki UNP">Ceowniki UNP</option>
+                                <option value="Teowniki T">Teowniki T</option>
+                                <option value="Profile IPE">Profile IPE</option>
+                                <option value="Profile HEB-HEA">Profile HEB-HEA</option>
+                                <option value="Profile półokrągłe HR">Profile półokrągłe HR</option>
+                                <option value="Rury kwadratowe RHS">Rury kwadratowe RHS</option>
+                                <option value="Rury">Rury</option>
+                                <option value="Pręty okrągłe (Ø)">Pręty okrągłe (Ø)</option>
+                            </select>
+                        </div>
+                        <div id="formProfilContainer" class="hidden w-full sm:flex-1 min-w-[120px]">
+                            <label class="block text-[10px] font-bold text-black mb-0.5 uppercase">Wybór z bazy</label>
+                            <select id="formProfilSelect" class="w-full border border-black p-1 text-xs outline-none bg-white">
+                                <option value="">-- brak bazy --</option>
+                            </select>
+                        </div>
+                        <div class="w-[calc(50%-0.25rem)] sm:w-[80px]">
+                            <label class="block text-[10px] font-bold text-black mb-0.5 uppercase">Gatunek</label>
+                            <select id="formGatunek" class="w-full border border-black p-1 text-xs outline-none bg-white"></select>
+                        </div>
+                        <div id="formGruboscContainer" class="w-[calc(50%-0.25rem)] sm:w-[60px]">
+                            <label class="block text-[10px] font-bold text-black mb-0.5 uppercase">Gr.[mm]</label>
+                            <input type="number" id="formGrubosc" step="0.1" min="0" class="w-full border border-black p-1 text-xs outline-none">
+                        </div>
+                        <div id="formSzerokoscContainer" class="w-[calc(33%-0.33rem)] sm:w-[60px]">
+                            <label class="block text-[10px] font-bold text-black mb-0.5 uppercase">Szer.[mm]</label>
+                            <input type="number" id="formSzerokosc" step="1" min="0" class="w-full border border-black p-1 text-xs outline-none">
+                        </div>
+                        <div class="w-[calc(33%-0.33rem)] sm:w-[60px]">
+                            <label class="block text-[10px] font-bold text-black mb-0.5 uppercase">Dł.[mm]</label>
+                            <input type="number" id="formDlugosc" step="1" min="0" class="w-full border border-black p-1 text-xs outline-none">
+                        </div>
+                        <div class="w-[calc(33%-0.33rem)] sm:w-[50px]">
+                            <label class="block text-[10px] font-bold text-black mb-0.5 uppercase">Ilość</label>
+                            <input type="number" id="formIlosc" value="1" min="1" class="w-full border border-black p-1 text-xs outline-none">
+                        </div>
+                        <div class="w-full sm:w-auto flex-grow flex gap-1.5">
+                            <button onclick="addManualItem()" class="flex-1 bg-white text-black border border-black hover:bg-black hover:text-white font-bold py-1 px-3 transition-colors text-xs uppercase shadow-sm whitespace-nowrap">
+                                Dodaj wiersz
+                            </button>
+                        </div>
+                    </div>
+                    <div id="lastAddedFeedback" class="hidden text-[10px] px-2 py-1 border border-black text-black font-bold mt-1"></div>
+                </div>
+            </div>
+
+            <div id="resultsSection" class="bg-white border border-black hidden flex-col overflow-hidden">
+                <div class="protocol-header">
+                    <div class="flex justify-between items-end w-full">
+                        <div>
+                            <div class="protocol-title">
+                                Kalkulacja Powierzchni Malowania 
+                                <span class="print-protocol-number ml-3 border border-black px-2 py-0.5 text-sm font-bold bg-white text-black leading-none"></span>
+                            </div>
+                            <div class="protocol-meta">Projekt: <span class="print-project-name font-bold"></span> | Załącznik nr 1: Wykaz Elementów</div>
+                        </div>
+                        <div class="protocol-meta text-right font-bold">
+                            Data: <span class="print-date"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-3 border-b border-black flex flex-col sm:flex-row justify-between items-center bg-white gap-3 print-hide">
+                    <h2 class="text-sm font-bold text-black uppercase flex items-center gap-2 flex-wrap">
+                        Zestawienie elementów
+                        <span class="print-protocol-number inline-block border border-black px-2 py-0.5 text-[10px] font-bold bg-gray-100 text-black ml-2"></span>
+                        <div class="flex items-center gap-2 ml-4 border-l-2 border-black pl-4">
+                            <label class="text-[10px] font-bold uppercase">Data kalkulacji:</label>
+                            <input type="date" id="protocolDateInput" onchange="updateProtocolDateVisuals()" class="border border-black p-1 text-xs outline-none bg-yellow-50 focus:bg-white font-normal">
+                        </div>
+                    </h2>
+                    <div class="flex items-center gap-3">
+                        <div class="bg-white text-black border border-black px-3 py-1 font-bold text-sm">
+                            SUMA POW: <span id="totalArea">0,00</span> m²
+                        </div>
+                        <button onclick="clearInputData()" class="text-black bg-white border border-black hover:bg-gray-200 px-3 py-1.5 text-xs font-bold transition-colors uppercase print-hide">
+                            Wyczyść
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="overflow-x-auto max-h-[500px] overflow-y-auto">
+                    <table class="w-full text-left text-xs whitespace-nowrap">
+                        <thead class="bg-white text-black font-bold sticky top-0 z-10 uppercase border-b-2 border-black">
+                            <tr>
+                                <th class="px-3 py-2 border-r border-black">Lp.</th>
+                                <th class="px-3 py-2 border-r border-black">Jednostka</th>
+                                <th class="px-3 py-2 border-r border-black">Shopprimer</th>
+                                <th class="px-3 py-2 border-r border-black">Typ</th>
+                                <th class="px-3 py-2 border-r border-black">Gatunek</th>
+                                <th class="px-3 py-2 border-r border-black text-right">Gr.[mm]</th>
+                                <th class="px-3 py-2 border-r border-black">Profil</th>
+                                <th class="px-3 py-2 border-r border-black text-center">Szer.[mm]</th>
+                                <th class="px-3 py-2 border-r border-black text-center">Dł.[mm]</th>
+                                <th class="px-3 py-2 border-r border-black text-center">Ilość</th>
+                                <th class="px-3 py-2 border-r border-black text-right">Mnożnik</th>
+                                <th class="px-3 py-2 border-r border-black text-right" title="Można edytować ręcznie">Pow.[m²] ✎</th>
+                                <th class="px-3 py-2 border-r border-black">Kolor</th>
+                                <th class="px-3 py-2 text-center print-hide action-col">Akcja</th>
+                            </tr>
+                        </thead>
+                        <tbody id="resultsTableBody" class="divide-y divide-black bg-white"></tbody>
+                    </table>
+                </div>
+
+                <div id="tableActionsContainer" class="p-3 border-t border-black bg-gray-50 flex justify-end gap-3 print-hide">
+                    <button id="btnPrintProtocol" onclick="printProtocol()" class="bg-white border border-black hover:bg-black hover:text-white text-black px-4 py-2 text-sm font-bold transition flex items-center gap-1.5 uppercase">
+                        Drukuj
+                    </button>
+                    <button id="btnSaveToSummary" onclick="saveToSummary()" class="bg-black text-white border border-black hover:bg-gray-800 px-6 py-2 text-sm font-bold transition flex items-center gap-1.5 uppercase shadow-md">
+                        Zapisz do Zestawienia
+                    </button>
+                </div>
+                
+                <div class="protocol-footer" style="padding-bottom: 20px;">
+                    <div class="sign-line">Sporządził<span class="protocol-author text-black text-[11px] font-normal normal-case block mt-1"></span></div>
+                    <div class="sign-line">Zatwierdził<span class="text-black text-[11px] font-normal normal-case block mt-1"></span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- WIDOK: ZESTAWIENIE KALKULACJI -->
+        <div id="view-history" class="space-y-4 hidden mt-4">
+            <div class="protocol-header-history border-b-2 border-black pb-2 mb-4 hidden print-history-only">
+                <div class="flex justify-between items-end">
+                    <div>
+                        <div class="text-lg font-bold uppercase text-black">Zestawienie Kalkulacji</div>
+                        <div class="text-xs text-black mt-1">Historia Zapisanych Kalkulacji</div>
+                    </div>
+                    <div class="text-xs text-black text-right font-bold">Data wydruku: <span class="print-date"></span></div>
+                </div>
+            </div>
+
+            <div class="bg-white border border-black print-hide">
+                <div class="p-3 border-b border-black flex flex-col sm:flex-row justify-between items-center bg-white gap-3">
+                    <h2 class="text-sm font-bold text-black uppercase">Zestawienie kalkulacji</h2>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button onclick="printHistoryProtocol()" class="bg-green-600 border border-green-600 hover:bg-green-700 text-white px-3 py-1.5 text-xs font-bold transition uppercase shadow-md">Drukuj zestawienie</button>
+                        <button onclick="exportHistoryToExcel()" class="bg-blue-600 border border-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 text-xs font-bold transition uppercase shadow-md">Eksport do Excela</button>
+                        <button id="btnDeleteSelectedHistory" onclick="deleteSelectedHistoryItemsWithPin()" class="bg-red-600 border border-red-600 hover:bg-red-700 text-white px-3 py-1.5 text-xs font-bold transition uppercase print-hide hidden">Usuń zaznaczone</button>
+                    </div>
+                </div>
+
+                <div class="p-3 border-b border-black grid grid-cols-1 md:grid-cols-4 gap-3 bg-white">
+                    <div>
+                        <label class="block text-xs font-bold text-black mb-1 uppercase">Data Od</label>
+                        <input type="date" id="histFilterDateFrom" onchange="renderHistoryTable()" class="w-full border border-black p-1 text-sm outline-none bg-white">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-black mb-1 uppercase">Data Do</label>
+                        <input type="date" id="histFilterDateTo" onchange="renderHistoryTable()" class="w-full border border-black p-1 text-sm outline-none bg-white">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-black mb-1 uppercase">Projekt</label>
+                        <input type="text" id="histFilterUnit" oninput="renderHistoryTable()" placeholder="Szukaj..." class="w-full border border-black p-1 text-sm outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-black mb-1 uppercase">Typ farby</label>
+                        <select id="histFilterPaint" onchange="renderHistoryTable()" class="w-full border border-black p-1 text-sm outline-none bg-white"></select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto bg-white border-x border-b border-black">
+                <table class="w-full text-left text-xs whitespace-nowrap">
+                    <thead class="bg-white text-black font-bold sticky top-0 uppercase border-b-2 border-black">
+                        <tr></tr>
+                    </thead>
+                    <tbody id="historyTableBody" class="divide-y divide-black bg-white"></tbody>
+                </table>
+            </div>
+            
+            <div class="protocol-footer print-history-only" style="padding-bottom: 20px;">
+                <div class="sign-line">Sporządził<span class="protocol-author text-black text-[11px] font-normal normal-case block mt-1"></span></div>
+                <div class="sign-line">Zatwierdził<span class="text-black text-[11px] font-normal normal-case block mt-1"></span></div>
+            </div>
+        </div>
+
+        <!-- WIDOK: WYDANIE FARB (SHOPPRIMER) -->
+        <div id="view-indusco" class="space-y-4 hidden mt-4">
+            <div class="bg-white p-4 border border-black print-hide">
+                <div class="flex justify-between border-b border-black pb-2 mb-3">
+                    <h2 class="text-sm font-bold text-black uppercase">Księgowanie Wydania / Utylizacji</h2>
+                </div>
+                <div class="mb-3 w-full sm:w-48">
+                    <label class="block text-xs font-bold text-black mb-1 uppercase">Data zdarzenia</label>
+                    <input type="date" id="induscoDate" class="w-full border border-black p-1.5 text-sm outline-none">
+                </div>
+                <div id="induscoBulkRows" class="space-y-2 mb-4"></div>
+                <div class="flex flex-wrap gap-2">
+                    <button onclick="addInduscoBulkRow()" class="bg-gray-200 text-black border border-black hover:bg-gray-300 font-bold py-1.5 px-4 uppercase text-xs transition">+ Dodaj kolejną pozycję</button>
+                    <button onclick="saveBulkIndusco()" class="bg-black text-white border border-black hover:bg-gray-800 font-bold py-1.5 px-4 uppercase text-xs transition shadow-md">Zatwierdź Zdarzenie</button>
+                </div>
+            </div>
+            
+            <div class="bg-white border border-black print-hide mt-4">
+                <div class="p-3 border-b border-black flex flex-col sm:flex-row justify-between items-center bg-white gap-3">
+                    <h2 class="text-sm font-bold text-black uppercase">Historia magazynowa (wydania/utylizacje/remanenty)</h2>
+                </div>
+                <div class="p-3 grid grid-cols-1 md:grid-cols-3 gap-3 bg-white">
+                    <div>
+                        <label class="block text-xs font-bold text-black mb-1 uppercase">Data Od</label>
+                        <input type="date" id="induscoFilterDateFrom" onchange="renderInduscoTable()" class="w-full border border-black p-1 text-sm outline-none bg-white">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-black mb-1 uppercase">Data Do</label>
+                        <input type="date" id="induscoFilterDateTo" onchange="renderInduscoTable()" class="w-full border border-black p-1 text-sm outline-none bg-white">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-black mb-1 uppercase">Rodzaj towaru</label>
+                        <select id="induscoFilterPaint" onchange="renderInduscoTable()" class="w-full border border-black p-1 text-sm outline-none bg-white"></select>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="overflow-x-auto bg-white border-x border-b border-black">
+                <table class="w-full text-left text-xs whitespace-nowrap">
+                    <thead class="bg-gray-100 text-black font-bold uppercase border-b-2 border-black">
+                        <tr>
+                            <th class="px-3 py-2 border-r border-black">Data</th>
+                            <th class="px-3 py-2 border-r border-black">Rodzaj towaru</th>
+                            <th class="px-3 py-2 border-r border-black text-right">Ilość [L]</th>
+                            <th class="px-3 py-2 border-r border-black">Akcja</th>
+                            <th class="px-3 py-2 border-r border-black">Wydał</th>
+                            <th id="colInduscoAction" class="px-3 py-2 text-center print-hide">Edycja</th>
+                        </tr>
+                    </thead>
+                    <tbody id="induscoTableBody" class="divide-y divide-gray-300 bg-white"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- WIDOK: PROJEKTY -->
+        <div id="view-projects" class="space-y-4 hidden mt-4">
+            <div class="bg-white p-4 border border-black print-hide">
+                <h2 class="text-sm font-bold text-black mb-3 border-b border-black pb-1 uppercase">Zarządzanie Listą Projektów</h2>
+                <div class="flex flex-wrap gap-3 items-end">
+                    <div>
+                        <label class="block text-xs font-bold text-black mb-1 uppercase">Nazwa Projektu</label>
+                        <input type="text" id="formNewProjectName" class="w-full border border-black p-1.5 text-sm outline-none">
+                    </div>
+                    <div>
+                        <button onclick="addProject()" class="w-full bg-white border border-black hover:bg-black hover:text-white text-black font-bold py-1.5 px-4 uppercase text-sm transition">Dodaj</button>
+                    </div>
+                </div>
+                <div class="mt-4 overflow-x-auto">
+                    <table class="w-full max-w-sm text-left text-xs whitespace-nowrap border border-black">
+                        <thead class="bg-gray-100 text-black font-bold uppercase border-b border-black">
+                            <tr>
+                                <th class="px-3 py-2 border-r border-black">Projekt</th>
+                                <th class="px-3 py-2 text-center w-16">Akcja</th>
+                            </tr>
+                        </thead>
+                        <tbody id="projectsTableBody" class="divide-y divide-black bg-white"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- WIDOK: BAZA PROFILI -->
+        <div id="view-db" class="space-y-4 hidden mt-4">
+            <div class="bg-white p-4 border border-black print-hide">
+                <h2 class="text-sm font-bold text-black mb-3 border-b border-black pb-1 uppercase">Dodaj nowy profil</h2>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+                    <div>
+                        <label class="block text-xs font-bold text-black mb-1 uppercase">Kategoria</label>
+                        <select id="formDbKategoria" class="w-full border border-black p-1 text-sm outline-none">
+                            <option value="Profile HP">Profile HP</option>
+                            <option value="Kątowniki L">Kątowniki L</option>
+                            <option value="Ceowniki UNP">Ceowniki UNP</option>
+                            <option value="Teowniki T">Teowniki T</option>
+                            <option value="Profile IPE">Profile IPE</option>
+                            <option value="Profile HEB-HEA">Profile HEB-HEA</option>
+                            <option value="Profile półokrągłe HR">Profile półokrągłe HR</option>
+                            <option value="Rury kwadratowe RHS">Rury kwadratowe RHS</option>
+                            <option value="Rury">Rury</option>
+                            <option value="Pręty okrągłe (Ø)">Pręty okrągłe (Ø)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-black mb-1 uppercase">Nazwa elementu</label>
+                        <input type="text" id="formDbNazwa" placeholder="np. L200x200" class="w-full border border-black p-1 text-sm outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-black mb-1 uppercase">Mnożnik [m²/m]</label>
+                        <input type="number" id="formDbMnoznik" step="0.001" min="0" placeholder="0.450" class="w-full border border-black p-1 text-sm outline-none">
+                    </div>
+                    <div>
+                        <button onclick="addManualDbItem()" class="w-full bg-white border border-black hover:bg-black hover:text-white text-black font-bold py-1 px-2 uppercase text-sm transition">Zapisz</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="dbPreviewSection" class="bg-white border border-black hidden flex-col overflow-hidden">
+                <div class="p-3 border-b border-black flex flex-col sm:flex-row justify-between items-center bg-white gap-3 print-hide">
+                    <h2 class="text-sm font-bold text-black uppercase">Zarządzaj bazą</h2>
+                    <div class="flex items-center gap-2">
+                        <input type="text" id="dbSearchInput" oninput="filterDbTable()" placeholder="Wyszukaj..." class="w-full sm:w-64 border border-black p-1 text-xs outline-none">
+                        <span id="dbCountBadge" class="bg-white text-black border border-black px-2 py-0.5 text-xs font-bold">0</span>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs whitespace-nowrap">
+                        <thead class="bg-white text-black font-bold sticky top-0 uppercase border-b-2 border-black">
+                            <tr>
+                                <th class="px-3 py-2 border-r border-black">Nazwa Profilu</th>
+                                <th class="px-3 py-2 text-right">Mnożnik pow. ✎</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dbTableBody" class="divide-y divide-black bg-white"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- WIDOK: KOLORYSTYKA (KARTY FARB) -->
+        <div id="view-colors" class="space-y-4 hidden mt-4">
+            <div class="bg-white p-4 border border-black">
+                <h2 class="text-sm font-bold text-black mb-3 border-b border-black pb-1 uppercase">Reguły kolorystyczne</h2>
+                <div class="overflow-x-auto border border-black">
+                    <table class="w-full text-left text-xs whitespace-nowrap">
+                        <thead class="bg-white text-black font-bold uppercase border-b-2 border-black">
+                            <tr>
+                                <th class="px-3 py-2 border-r border-black">Grupa materiałowa</th>
+                                <th class="px-3 py-2 border-r border-black">Gatunki stali</th>
+                                <th class="px-3 py-2 border-r border-black">Uwagi</th>
+                                <th class="px-3 py-2">Kolor</th>
+                            </tr>
+                        </thead>
+                        <tbody id="colorsTableBody" class="divide-y divide-black bg-white"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- WIDOK: WYDAJNOŚĆ (KOSZTY I FARBY) -->
+        <div id="view-costs" class="space-y-4 hidden mt-4 page-break">
+            <div class="protocol-header">
+                <div class="flex justify-between items-end w-full">
+                    <div>
+                        <div class="protocol-title">
+                            Kalkulacja Powierzchni Malowania
+                            <span class="print-protocol-number ml-3 border border-black px-2 py-0.5 text-sm font-bold bg-white text-black leading-none"></span>
+                        </div>
+                        <div class="protocol-meta">Projekt: <span class="print-project-name font-bold"></span> | Załącznik nr 2: Kosztorys i Zapotrzebowanie Na Farbę</div>
+                    </div>
+                    <div class="protocol-meta text-right font-bold">Data: <span class="print-date"></span></div>
+                </div>
+            </div>
+
+            <div class="bg-white p-4 border border-black print-hide">
+                <h2 class="text-sm font-bold text-black mb-3 border-b border-black pb-1 uppercase">Koszty Robocizny [PLN/m²]</h2>
+                <div class="flex gap-4 mb-6">
+                    <div>
+                        <label class="block text-xs font-bold text-black mb-1">Blachy</label>
+                        <input type="number" id="costBlachy" step="0.01" min="0" oninput="updateLaborCosts()" class="w-32 border border-black p-1 text-sm outline-none font-bold">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-black mb-1">Profile i rury</label>
+                        <input type="number" id="costProfile" step="0.01" min="0" oninput="updateLaborCosts()" class="w-32 border border-black p-1 text-sm outline-none font-bold">
+                    </div>
+                </div>
+
+                <h2 class="text-sm font-bold text-black mb-3 border-b border-black pb-1 uppercase">Parametry Farb (Shopprimery)</h2>
+                <div class="flex flex-wrap gap-2 mb-3 items-end">
+                    <div>
+                        <label class="block text-[10px] font-bold text-black mb-0.5 uppercase">Nazwa nowej farby</label>
+                        <input type="text" id="newPaintName" class="w-48 border border-black p-1.5 text-sm outline-none">
+                    </div>
+                    <button onclick="addPaintType()" class="bg-black text-white font-bold py-1.5 px-4 uppercase text-xs border border-black hover:bg-gray-800 transition">Dodaj Farbę</button>
+                </div>
+                <div class="overflow-x-auto border border-black">
+                    <table class="w-full text-left text-xs whitespace-nowrap">
+                        <thead class="bg-gray-100 text-black font-bold uppercase border-b-2 border-black">
+                            <tr>
+                                <th class="px-3 py-2 border-r border-black">Shopprimer</th>
+                                <th class="px-3 py-2 border-r border-black text-center">Wydajność Blachy [m²/l]</th>
+                                <th class="px-3 py-2 border-r border-black text-center">Wydajność Profile [m²/l]</th>
+                                <th class="px-3 py-2 border-r border-black text-center">Rozcieńczalnik [%]</th>
+                                <th class="px-3 py-2 text-center w-16">Akcja</th>
+                            </tr>
+                        </thead>
+                        <tbody id="paintTypesTableBody" class="divide-y divide-black bg-white"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="costsBreakdownContainer" class="space-y-3 mt-4 print-only-costs"></div>
+
+            <div class="protocol-footer print-only-costs" style="padding-bottom: 20px; display: none;">
+                <div class="sign-line">Sporządził<span class="protocol-author text-black text-[11px] font-normal normal-case block mt-1"></span></div>
+                <div class="sign-line">Zatwierdził<span class="text-black text-[11px] font-normal normal-case block mt-1"></span></div>
+            </div>
+        </div>
+
+        <!-- WIDOK: USTAWIENIA -->
+        <div id="view-users" class="space-y-4 hidden mt-4">
+            <div id="addUserSection" class="bg-white p-4 border border-black print-hide hidden">
+                <h2 class="text-sm font-bold text-black mb-3 border-b border-black pb-1 uppercase">Zarządzanie Użytkownikami</h2>
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
+                    <div>
+                        <label class="block text-xs font-bold text-black mb-1 uppercase">Login *</label>
+                        <input type="text" id="formNewUserLogin" class="w-full border border-black p-1.5 text-sm outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-black mb-1 uppercase">Hasło *</label>
+                        <input type="text" id="formNewUserPass" class="w-full border border-black p-1.5 text-sm outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-black mb-1 uppercase">Imię i nazwisko *</label>
+                        <input type="text" id="formNewUserName" class="w-full border border-black p-1.5 text-sm outline-none">
+                    </div>
+                    <div class="pb-1.5 flex items-center h-full">
+                        <input type="checkbox" id="formNewUserAdmin" class="mr-2 w-4 h-4 cursor-pointer">
+                        <label class="text-xs font-bold text-black uppercase cursor-pointer" for="formNewUserAdmin">Admin</label>
+                    </div>
+                    <div>
+                        <button onclick="addNewUser()" class="w-full bg-white border border-black hover:bg-black hover:text-white text-black font-bold py-1.5 px-2 uppercase text-sm transition">Dodaj</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="adminPanel" class="bg-red-50 p-4 border border-black mt-4 hidden print-hide">
+                <h2 class="text-sm font-bold text-red-600 mb-3 border-b border-red-600 pb-1 uppercase">Panel Administratora</h2>
+                <div class="flex items-center justify-between flex-wrap gap-3">
+                    <span class="text-xs font-bold text-black uppercase">Zresetuj numerację kalkulacji (od 1)</span>
+                    <button onclick="resetProtocolCounter()" class="bg-red-600 text-white border border-red-600 font-bold py-1.5 px-4 uppercase text-xs hover:bg-red-700 transition">Zresetuj liczniki</button>
+                </div>
+            </div>
+
+            <div class="bg-white border border-black flex-col overflow-hidden mt-4 print-hide">
+                <div class="p-3 border-b border-black flex flex-col sm:flex-row justify-between items-center bg-white gap-3">
+                    <h2 class="text-sm font-bold text-black uppercase">Lista uprawnień</h2>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs whitespace-nowrap">
+                        <thead class="bg-white text-black font-bold sticky top-0 uppercase border-b-2 border-black">
+                            <tr>
+                                <th class="px-3 py-2 border-r border-black">Login</th>
+                                <th class="px-3 py-2 border-r border-black">Imię i nazwisko</th>
+                                <th class="px-3 py-2 border-r border-black">Rola</th>
+                                <th class="px-3 py-2 border-r border-black">Hasło</th>
+                                <th id="colUserAction" class="px-3 py-2 text-center">Akcja</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTableBody" class="divide-y divide-black bg-white"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Moduł Logowania Firebase -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js";
+        import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDfqEYDh_vEmDx_Br3T-eEB81HiyWc_5W0",
+            authDomain: "promer-a0297.firebaseapp.com",
+            databaseURL: "https://promer-a0297-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "promer-a0297",
+            storageBucket: "promer-a0297.firebasestorage.app",
+            messagingSenderId: "571916792305",
+            appId: "1:571916792305:web:befef2224e31402e0d5450"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
+        
+        try { const analytics = getAnalytics(app); } catch (e) { }
+
+        window.firebaseDb = db;
+        window.dbRef = ref;
+        window.dbSet = set;
+        window.dbGet = get;
+
+        let dataLoaded = false;
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                window.firebaseUser = user; 
+                if (!dataLoaded && window.loadDataFromFirebase) {
+                    await window.loadDataFromFirebase();
+                    dataLoaded = true;
+                }
+            } else {
+                window.firebaseUser = null;
+            }
+        });
+
+        const initAuth = async () => {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    try {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } catch (tokenError) {
+                        await signInAnonymously(auth);
+                    }
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("Błąd logowania Firebase:", error.code, error.message);
+            }
+        };
+
+        initAuth();
+    </script>
+
+    <script>
+        const USE_FIREBASE = true;
+
+        let currentFileHandle = null;
+        let isPreviewMode = false;
+        let autoSaveTimeout = null;
+        let protocolCounter = 0; 
+        let currentPreviewProtocolNumber = null;
+        window.editingProtocolId = null; 
+        window.tempInputData = null; 
+        
+        let currentUser = null;
+        let appUsers = [];
+        let inputData = []; 
+        let resultsData = []; 
+        let printHistory = [];
+        let filteredHistory = [];
+        let projectsList = [];
+        let induscoHistory = [];
+        let database = {}; 
+        let visibleDailyPaints = null;
+
+        let paintTypes = [
+            { id: 'INTERPLATE', name: 'INTERPLATE', yieldBlachy: 8.5, yieldProfile: 6.0, thinnerPct: 14 },
+            { id: 'SIGMAWELD', name: 'SIGMAWELD', yieldBlachy: 10.0, yieldProfile: 6.5, thinnerPct: 14 }
+        ];
+        let laborCosts = { blachy: 4.20, profile: 6.80 };
+
+        // --- CUSTOM UI DIALOGS ---
+        window.showCustomDialog = function(options) {
+            return new Promise((resolve) => {
+                const overlay = document.getElementById('customDialogOverlay');
+                const titleEl = document.getElementById('customDialogTitle');
+                const msgEl = document.getElementById('customDialogMessage');
+                const inputEl = document.getElementById('customDialogInput');
+                const btnContainer = document.getElementById('customDialogButtons');
+
+                titleEl.innerHTML = options.title || '<svg class="w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> Komunikat';
+                msgEl.innerHTML = options.message || '';
+                
+                if (options.type === 'prompt') {
+                    inputEl.type = options.inputType || 'text';
+                    inputEl.value = '';
+                    inputEl.classList.remove('hidden');
+                    setTimeout(() => inputEl.focus(), 100);
+                } else {
+                    inputEl.classList.add('hidden');
+                }
+
+                btnContainer.innerHTML = '';
+
+                if (options.type === 'confirm' || options.type === 'prompt') {
+                    const cancelBtn = document.createElement('button');
+                    cancelBtn.className = "bg-gray-200 text-black border border-black hover:bg-gray-300 font-bold py-1.5 px-4 uppercase text-xs transition";
+                    cancelBtn.textContent = 'Anuluj';
+                    cancelBtn.onclick = () => { overlay.classList.remove('flex'); overlay.classList.add('hidden'); resolve(null); };
+                    btnContainer.appendChild(cancelBtn);
+                }
+
+                const okBtn = document.createElement('button');
+                okBtn.className = "bg-black text-white border border-black hover:bg-gray-800 font-bold py-1.5 px-4 uppercase text-xs transition shadow-md";
+                okBtn.textContent = 'Zatwierdź';
+                okBtn.onclick = () => {
+                    overlay.classList.remove('flex'); overlay.classList.add('hidden');
+                    if (options.type === 'prompt') resolve(inputEl.value);
+                    else resolve(true);
+                };
+                btnContainer.appendChild(okBtn);
+
+                overlay.classList.remove('hidden');
+                overlay.classList.add('flex');
+                
+                if(options.type === 'alert') setTimeout(() => okBtn.focus(), 100);
+            });
+        };
+
+        window.customAlert = async function(msg) { await showCustomDialog({type: 'alert', message: msg}); };
+        window.customConfirm = async function(msg) { return await showCustomDialog({type: 'confirm', message: msg, title: '<svg class="w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> Potwierdzenie'}); };
+        window.customPrompt = async function(msg, inputType='text') { return await showCustomDialog({type: 'prompt', message: msg, title: '<svg class="w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg> Wprowadź dane', inputType}); };
+
+        // --- STREAMING_CHUNK:Date Formatting Utility Functions ---
+        // --- FUNKCJE DAT ---
+        window.dateToISO = function(dateObj) {
+            const y = dateObj.getFullYear();
+            const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const d = String(dateObj.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        };
+        window.parsePlDateToISO = function(plDateStr) {
+            if (!plDateStr) return dateToISO(new Date());
+            const dStr = plDateStr.split(',')[0].trim();
+            const parts = dStr.split('.');
+            if (parts.length === 3) return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+            return dateToISO(new Date());
+        };
+        window.parsePlDate = function(dateStr) {
+            if (!dateStr) return new Date(0);
+            const d = dateStr.split(',')[0].trim();
+            const parts = d.split('.');
+            if (parts.length === 3) return new Date(parts[2], parts[1] - 1, parts[0]);
+            return new Date(dateStr);
+        };
+        window.formatISOToPL = function(isoDateStr) {
+            if (!isoDateStr) return new Date().toLocaleDateString('pl-PL');
+            const parts = isoDateStr.split('-');
+            if(parts.length === 3) return `${parts[2]}.${parts[1]}.${parts[0]}`;
+            return isoDateStr;
+        };
+        window.updateProtocolDateVisuals = function() {
+            const isoDate = document.getElementById('protocolDateInput').value;
+            const plDate = formatISOToPL(isoDate);
+            document.querySelectorAll('#view-calc .print-date, #view-costs .print-date').forEach(el => el.textContent = plDate);
+        };
+
+        // --- STREAMING_CHUNK:Base Application Rule Sets and Grade Tables ---
+        // --- BAZOWE ZESTAWIENIA (GATUNKI/REGUŁY) ---
+        const steelGradesList = [
+            "A", "B", "D", "E", 
+            "A36", "D36", "E36", "F36", "A40", "D40", "E40", "F40", "A420", "D420", "E420", "F420", "A460", "D460", "E460", "F460", "A500", "D500", "E500", "F500", "A550", "D550", "E550", "F550", "A620", "D620", "E620", "F620", "A690", "D690", "E690", "F690",
+            "S235JR", "S235JO", "S235J2", "S275M", "S275N", 
+            "S355JR", "S355J0", "S355J2", "S355K2", "S355M", "S355N", "S355ML", "S355NL", 
+            "S420M", "S420N", "S420ML", "S420NL", "S460M", "S460N", "S460ML", "S460NL", "S460QL", "S460QL1", "S500QL", "S500QL1", "S550QL", "S550QL1", "S620QL", "S620QL1", "S690QL", "S690QL1"
+        ];
+        const shopPrimerRules = [
+            { group: "Stale okrętowe zwykłe + A36", grades: ["A", "B", "D", "E", "A36"], colorName: "Szary", colorHex: "#9ca3af" },
+            { group: "Stale okrętowe podwyższonej wytrzymałości (<= 50mm)", grades: ["D36", "E36"], conditionInfo: "Grubość <= 50mm", condition: (grubosc) => !grubosc || grubosc <= 50, colorName: "Szary", colorHex: "#9ca3af" },
+            { group: "Stale okrętowe podwyższonej wytrzymałości (> 50mm)", grades: ["D36", "E36"], conditionInfo: "Grubość > 50mm", condition: (grubosc) => grubosc > 50, colorName: "Czerwony", colorHex: "#ef4444" },
+            { group: "Stale okrętowe (F36)", grades: ["F36"], colorName: "Czerwony", colorHex: "#ef4444" },
+            { group: "Stale okrętowe wysokiej wytrzymałości", grades: ["A40", "D40", "E40", "F40", "A420", "D420", "E420", "F420", "A460", "D460", "E460", "F460", "A500", "D500", "E500", "F500", "A550", "D550", "E550", "F550", "A620", "D620", "E620", "F620", "A690", "D690", "E690", "F690"], colorName: "Zielony", colorHex: "#22c55e" },
+            { group: "Stale konstrukcyjne zwykłej wytrzymałości", grades: ["S235JR", "S235JO", "S235J2", "S275M", "S275N"], colorName: "Szary", colorHex: "#9ca3af" },
+            { group: "Stale konstrukcyjne podwyższonej wytrzymałości", grades: ["S355JR", "S355J0", "S355J2", "S355K2", "S355M", "S355N"], colorName: "Szary", colorHex: "#9ca3af" },
+            { group: "Stale konstrukcyjne podwyższonej wytrzymałości", grades: ["S355ML", "S355NL"], colorName: "Czerwony", colorHex: "#ef4444" },
+            { group: "Stale konstrukcyjne wysokiej wytrzymałości", grades: ["S420M", "S420N", "S420ML", "S420NL", "S460M", "S460N", "S460ML", "S460NL", "S460QL", "S460QL1", "S500QL", "S500QL1", "S550QL", "S550QL1", "S620QL", "S620QL1", "S690QL", "S690QL1"], colorName: "Zielony", colorHex: "#22c55e" }
+        ];
+
+        window.formatNumber = function(num, decimals = 2) {
+            if (num === null || num === undefined || num === "" || num === "-") return "-";
+            const n = parseFloat(num);
+            if (isNaN(n)) return num;
+            return new Intl.NumberFormat('pl-PL', { minimumFractionDigits: decimals, maximumFractionDigits: decimals }).format(n);
+        };
+
+        window.getShopprimerColor = function(gatunek, grubosc) {
+            if (!gatunek || gatunek === "-") return { name: "Brak danych", hex: "transparent" };
+            const g = gatunek.toUpperCase().trim();
+            for (let rule of shopPrimerRules) {
+                if (rule.grades.includes(g)) {
+                    if (rule.condition) {
+                        if (rule.condition(grubosc)) return { name: rule.colorName, hex: rule.colorHex };
+                    } else return { name: rule.colorName, hex: rule.colorHex };
+                }
+            }
+            return { name: "Brak danych", hex: "transparent" };
+        };
+
+        window.renderColorsTable = function() {
+            const tbody = document.getElementById('colorsTableBody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            shopPrimerRules.forEach(rule => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-gray-100 transition-colors";
+                tr.innerHTML = `
+                    <td class="font-bold text-black px-3 py-2 border-r border-black">${rule.group}</td>
+                    <td class="whitespace-normal text-xs text-black px-3 py-2 border-r border-black">${rule.grades.join(", ")}</td>
+                    <td class="text-xs text-black px-3 py-2 border-r border-black">${rule.conditionInfo || "-"}</td>
+                    <td class="px-3 py-2">
+                        <div class="flex items-center gap-2">
+                            <span class="w-4 h-4 border border-black block" style="background-color: ${rule.colorHex}"></span>
+                            <span class="font-bold text-black">${rule.colorName}</span>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        };
+
+        // --- STREAMING_CHUNK:Project State Management and Saving ---
+        // --- ZARZĄDZANIE STANEM & BAZĄ ---
+        window.getProjectState = function() {
+            return {
+                isMm: true,
+                appUsers: appUsers,
+                projectsList: projectsList,
+                database: database, 
+                inputData: inputData, 
+                printHistory: printHistory,
+                induscoHistory: induscoHistory || [],
+                protocolCounter: protocolCounter,
+                paintTypes: paintTypes,
+                laborCosts: laborCosts,
+                visibleDailyPaints: visibleDailyPaints
+            };
+        };
+
+        window.autoSaveToDisk = async function() {
+            if (!USE_FIREBASE && !currentFileHandle) return;
+            clearTimeout(autoSaveTimeout);
+            autoSaveTimeout = setTimeout(async () => {
+                try {
+                    const state = getProjectState();
+                    if (USE_FIREBASE) {
+                        if (window.firebaseDb && window.dbSet && window.dbRef) {
+                            await window.dbSet(window.dbRef(window.firebaseDb, 'appState'), state);
+                        }
+                    } else if (currentFileHandle) {
+                        const dataStr = JSON.stringify(state, null, 2);
+                        if ((await currentFileHandle.queryPermission({ mode: 'readwrite' })) === 'granted') {
+                            const writable = await currentFileHandle.createWritable();
+                            await writable.write(dataStr);
+                            await writable.close();
+                        }
+                    }
+                } catch (e) {
+                    console.warn("Autozapis w tle nieudany.", e);
+                }
+            }, 1000); 
+        };
+
+        window.loadDataFromFirebase = async function() {
+            try {
+                if (!window.firebaseDb || !window.dbGet || !window.dbRef) return;
+                
+                const snapshot = await window.dbGet(window.dbRef(window.firebaseDb, 'appState'));
+                if (snapshot.exists()) {
+                    await applyProjectData(JSON.stringify(snapshot.val()), true);
+                } else {
+                    const oldSnapshot = await window.dbGet(window.dbRef(window.firebaseDb, '/'));
+                    if (oldSnapshot.exists() && oldSnapshot.val() && oldSnapshot.val().projectsList) {
+                        await applyProjectData(JSON.stringify(oldSnapshot.val()), true);
+                        autoSaveToDisk();
+                    } else {
+                        const initialOverlay = document.getElementById('initialLoadOverlay');
+                        if (initialOverlay) {
+                            initialOverlay.classList.remove('hidden');
+                            initialOverlay.classList.add('flex');
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error("Błąd pobierania danych z Firebase:", err);
+            }
+        };
+
+        window.saveProjectAction = async function(silent = false) {
+            const state = getProjectState();
+            const dataStr = JSON.stringify(state, null, 2);
+            if (USE_FIREBASE) {
+                try {
+                    if (window.firebaseDb && window.dbSet && window.dbRef) {
+                        await window.dbSet(window.dbRef(window.firebaseDb, 'appState'), state);
+                        if (!silent) await customAlert("Projekt zsynchronizowany z chmurą Firebase.");
+                    }
+                } catch (err) {
+                    if (!silent) await customAlert("Błąd zapisu w Firebase! Sprawdź połączenie z internetem.");
+                }
+                return;
+            }
+            try {
+                if (window.showSaveFilePicker) {
+                    if (!currentFileHandle) {
+                        currentFileHandle = await window.showSaveFilePicker({
+                            suggestedName: 'status.json',
+                            types: [{ description: 'Plik JSON', accept: {'application/json': ['.json']} }],
+                        });
+                    }
+                    const writable = await currentFileHandle.createWritable();
+                    await writable.write(dataStr);
+                    await writable.close();
+                    document.getElementById('mainAppContainer').classList.remove('locked-ui');
+                    if (!silent) await customAlert("Projekt zapisany w pliku lokalnym.");
+                } else {
+                    const blob = new Blob([dataStr], {type: "application/json"});
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a'); a.href = url; a.download = "status.json";
+                    document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+                }
+            } catch (err) {}
+        };
+
+        window.loadProjectAction = async function() {
+            if (USE_FIREBASE) {
+                try {
+                    if (window.firebaseDb && window.dbGet && window.dbRef) {
+                        const snapshot = await window.dbGet(window.dbRef(window.firebaseDb, 'appState'));
+                        if (snapshot.exists()) {
+                            await applyProjectData(JSON.stringify(snapshot.val()));
+                            await saveProjectAction(true); 
+                        } else {
+                            await customAlert("Baza Firebase jest pusta. Użyj opcji wczytania pliku z dysku.");
+                            document.getElementById('loadProjectInput').click();
+                        }
+                    }
+                } catch (err) {
+                    await customAlert("Nie udało się połączyć z Firebase.");
+                }
+                return;
+            }
+            try {
+                if (window.showOpenFilePicker) {
+                    const [fileHandle] = await window.showOpenFilePicker({ types: [{ description: 'JSON', accept: {'application/json': ['.json']} }] });
+                    const options = { mode: 'readwrite' };
+                    if ((await fileHandle.queryPermission(options)) !== 'granted') await fileHandle.requestPermission(options);
+                    currentFileHandle = fileHandle;
+                    const file = await fileHandle.getFile();
+                    const contents = await file.text();
+                    await applyProjectData(contents);
+                } else {
+                    document.getElementById('loadProjectInput').click();
+                }
+            } catch (err) { document.getElementById('loadProjectInput').click(); }
+        };
+
+        window.loadProjectFallback = function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            currentFileHandle = null; 
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                await applyProjectData(e.target.result);
+                await saveProjectAction(true); 
+            };
+            reader.readAsText(file);
+            event.target.value = ''; 
+        };
+
+        // --- STREAMING_CHUNK:Applying Project Data Loading Logic ---
+        window.applyProjectData = async function(jsonString, isSilent = false) {
+            try {
+                const projectData = JSON.parse(jsonString);
+
+                if (projectData.database) {
+                    let safeDatabase = {};
+                    for (let cat in projectData.database) {
+                        let newCat = cat;
+                        if (["Profile HEA/HEB", "Profile HEA-HEB", "Profile HEB/HEA", "Profile HEB-HEA"].includes(cat)) {
+                            newCat = "Profile HEB-HEA";
+                        }
+                        if (!safeDatabase[newCat]) safeDatabase[newCat] = {};
+                        for (let itemKey in projectData.database[cat]) {
+                            let safeItemKey = itemKey.replace(/[\.\$#\[\]\/]/g, ',');
+                            safeDatabase[newCat][safeItemKey] = projectData.database[cat][itemKey];
+                        }
+                    }
+                    database = safeDatabase;
+                }
+
+                if (projectData.projectsList) projectsList = projectData.projectsList;
+                if (projectData.induscoHistory) induscoHistory = projectData.induscoHistory;
+
+                if (projectData.appUsers) {
+                    appUsers = projectData.appUsers;
+                    if (!appUsers.find(u => u.login === 'piotr.pallach')) {
+                        appUsers.push({ login: 'piotr.pallach', password: '!@#PiOtR', name: 'Piotr Pallach', role: 'admin' });
+                    } else {
+                        let p = appUsers.find(u => u.login === 'piotr.pallach');
+                        if (!p.role) { p.role = 'admin'; p.name = 'Piotr Pallach'; }
+                    }
+                }
+                
+                if (projectData.protocolCounter !== undefined) protocolCounter = projectData.protocolCounter;
+                visibleDailyPaints = projectData.visibleDailyPaints !== undefined ? projectData.visibleDailyPaints : null;
+                
+                const isMm = projectData.isMm === true;
+                if (projectData.inputData) {
+                    inputData = projectData.inputData;
+                    if (!isMm) {
+                        inputData.forEach(item => {
+                            if (item.Dlugosc && item.Dlugosc < 200) item.Dlugosc *= 1000;
+                            if (item.Szerokosc && item.Szerokosc < 100) item.Szerokosc *= 1000;
+                        });
+                    }
+                    if(inputData.length > 0 && inputData[0].Jednostka) {
+                        const projInput = document.getElementById('formJednostka');
+                        // Clean legacy " - BLACHY" or " - PROFILE" if exists in form
+                        let val = inputData[0].Jednostka;
+                        if (val.includes(" - BLACHY")) val = val.replace(" - BLACHY", "");
+                        if (val.includes(" - PROFILE")) val = val.replace(" - PROFILE", "");
+                        if (projInput) projInput.value = val;
+                    }
+                }
+                if (projectData.printHistory) {
+                    printHistory = projectData.printHistory;
+                    if (!isMm) {
+                        printHistory.forEach(h => {
+                            if (h.items) {
+                                h.items.forEach(item => {
+                                    if (item.Dlugosc && item.Dlugosc < 200) item.Dlugosc *= 1000;
+                                    if (item.Szerokosc && item.Szerokosc < 100) item.Szerokosc *= 1000;
+                                });
+                            }
+                        });
+                    }
+                }
+                
+                if (projectData.paintTypes) {
+                    paintTypes = projectData.paintTypes.filter(p => p.id !== 'INNY');
+                    laborCosts = projectData.laborCosts || { blachy: 4.20, profile: 6.80 };
+                } else if (projectData.paintParams) {
+                    paintTypes = [
+                        { id: 'INTERPLATE', name: 'INTERPLATE', yieldBlachy: parseFloat(projectData.paintParams.yieldIntBlachy)||8.5, yieldProfile: parseFloat(projectData.paintParams.yieldIntProfile)||6.0, thinnerPct: parseFloat(projectData.paintParams.thinnerPctInt)||14 },
+                        { id: 'SIGMAWELD', name: 'SIGMAWELD', yieldBlachy: parseFloat(projectData.paintParams.yieldSigBlachy)||10.0, yieldProfile: parseFloat(projectData.paintParams.yieldSigProfile)||6.5, thinnerPct: parseFloat(projectData.paintParams.thinnerPctSig)||14 }
+                    ];
+                    laborCosts = { blachy: parseFloat(projectData.paintParams.costBlachy)||4.20, profile: parseFloat(projectData.paintParams.costProfile)||6.80 };
+                }
+
+                document.getElementById('costBlachy').value = laborCosts.blachy;
+                document.getElementById('costProfile').value = laborCosts.profile;
+                
+                renderDbTable(); renderPaintTypesTable(); updatePaintDropdowns();
+                renderHistoryTable(); renderUsersTable(); renderProjectsList(); 
+                renderInduscoTable(); updateProfilSelect(); calculate();
+
+                const initialOverlay = document.getElementById('initialLoadOverlay');
+                if (initialOverlay) { initialOverlay.classList.add('hidden'); initialOverlay.classList.remove('flex'); }
+
+                if (!currentUser) {
+                    const loginOverlay = document.getElementById('loginOverlay');
+                    loginOverlay.classList.remove('hidden'); loginOverlay.classList.add('flex');
+                } else {
+                    document.getElementById('mainAppContainer').classList.remove('locked-ui');
+                }
+
+                if(!isSilent) await customAlert("Wczytano projekt pomyślnie.");
+            } catch (error) { 
+                if(!isSilent) await customAlert("Błąd odczytu danych."); 
+            }
+        };
+
+        // --- STREAMING_CHUNK:Tab and Navigation Logic ---
+        // --- ZAKŁADKI I MENU ---
+        window.toggleMoreTabs = function(forceClose = false) {
+            const menu = document.getElementById('moreTabsMenu');
+            const btn = document.getElementById('btnMoreTabs');
+            if (forceClose || !menu.classList.contains('hidden')) {
+                menu.classList.add('hidden');
+                btn.classList.remove('border-black', 'border-b-0');
+                btn.classList.add('border-transparent');
+            } else {
+                menu.classList.remove('hidden');
+                btn.classList.add('border-black', 'border-b-0');
+                btn.classList.remove('border-transparent');
+            }
+        };
+
+        document.addEventListener('click', function(event) {
+            const menu = document.getElementById('moreTabsMenu');
+            const btn = document.getElementById('btnMoreTabs');
+            if (menu && !menu.classList.contains('hidden') && !btn.contains(event.target) && !menu.contains(event.target)) {
+                toggleMoreTabs(true);
+            }
+        });
+
+        window.switchTab = function(tabId) {
+            const views = ['daily', 'calc', 'db', 'colors', 'costs', 'history', 'users', 'projects', 'indusco'];
+            const dropdownTabs = ['db', 'colors', 'costs', 'users'];
+            
+            views.forEach(v => {
+                const el = document.getElementById('view-' + v);
+                if(el) { el.classList.add('hidden'); el.classList.remove('block'); }
+                const btn = document.getElementById('tab-' + v);
+                if(btn) {
+                    if (!dropdownTabs.includes(v)) {
+                        btn.className = "px-2 py-1.5 border-2 border-transparent hover:border-black border-b-0 text-black bg-white text-xs font-bold focus:outline-none whitespace-nowrap z-10";
+                    } else {
+                        btn.className = "px-3 py-2 text-left hover:bg-gray-200 text-black text-xs font-bold focus:outline-none whitespace-nowrap border-b border-gray-200";
+                        if (v === 'users') btn.classList.remove('border-b', 'border-gray-200');
+                    }
+                }
+            });
+            
+            const targetEl = document.getElementById('view-' + tabId);
+            if(targetEl) { targetEl.classList.remove('hidden'); targetEl.classList.add('block'); }
+            
+            const targetBtn = document.getElementById('tab-' + tabId);
+            const btnMoreTabs = document.getElementById('btnMoreTabs');
+            
+            if(targetBtn) {
+                if (!dropdownTabs.includes(tabId)) {
+                    targetBtn.className = "px-2 py-1.5 border-2 border-black border-b-0 bg-white text-black text-xs font-bold focus:outline-none whitespace-nowrap z-10";
+                    if (btnMoreTabs) btnMoreTabs.classList.remove('bg-gray-200');
+                } else {
+                    targetBtn.className = "px-3 py-2 text-left bg-gray-200 text-black text-xs font-bold focus:outline-none whitespace-nowrap border-b border-gray-200";
+                    if (tabId === 'users') targetBtn.classList.remove('border-b', 'border-gray-200');
+                    if (btnMoreTabs) btnMoreTabs.classList.add('bg-gray-200');
+                }
+            }
+            if (tabId === 'daily') { renderDailySidebar(); renderDailyLedger(); }
+        };
+
+        // --- STREAMING_CHUNK:User Authorization ---
+        // --- AUTORYZACJA ---
+        window.handleLogin = function() {
+            const user = document.getElementById('loginUsername').value.trim();
+            const pass = document.getElementById('loginPassword').value;
+            const found = appUsers.find(u => u.login === user && u.password === pass);
+            if (found) {
+                currentUser = found;
+                currentUser.lastLogin = new Date().toLocaleString('pl-PL');
+                autoSaveToDisk();
+
+                document.getElementById('loginOverlay').classList.add('hidden');
+                document.getElementById('loginOverlay').classList.remove('flex');
+                document.getElementById('loginError').classList.add('hidden');
+                document.getElementById('mainAppContainer').classList.remove('locked-ui');
+                
+                const welcomeMsg = document.getElementById('welcomeMessage');
+                const welcomeName = document.getElementById('welcomeName');
+                if (welcomeMsg && welcomeName) {
+                    welcomeName.textContent = currentUser.name || currentUser.login;
+                    welcomeMsg.classList.remove('hidden');
+                }
+                const adminPanel = document.getElementById('adminPanel');
+                if (adminPanel) adminPanel.classList.toggle('hidden', currentUser.role !== 'admin');
+                const addUserSec = document.getElementById('addUserSection');
+                if (addUserSec) addUserSec.classList.toggle('hidden', currentUser.role !== 'admin');
+
+                renderHistoryTable(); renderInduscoTable(); renderUsersTable();
+                updatePrintAuthor(currentUser.name || currentUser.login);
+                switchTab('daily'); 
+            } else {
+                document.getElementById('loginError').classList.remove('hidden');
+            }
+        };
+
+        window.handleLogout = function() {
+            cancelEditMode();
+            currentUser = null;
+            document.getElementById('loginUsername').value = '';
+            document.getElementById('loginPassword').value = '';
+            document.getElementById('loginOverlay').classList.remove('hidden');
+            document.getElementById('loginOverlay').classList.add('flex');
+            document.getElementById('mainAppContainer').classList.add('locked-ui');
+            updatePrintAuthor("");
+            renderHistoryTable(); renderInduscoTable();
+            const welcomeMsg = document.getElementById('welcomeMessage');
+            if (welcomeMsg) welcomeMsg.classList.add('hidden');
+        };
+
+        window.updatePrintAuthor = function(name) {
+            document.querySelectorAll('.protocol-author').forEach(el => el.textContent = name || "");
+        };
+
+        // --- STREAMING_CHUNK:Projects and Users Table Rendering ---
+        // --- UŻYTKOWNICY & PROJEKTY ---
+        window.renderProjectsList = function() {
+            const tbody = document.getElementById('projectsTableBody');
+            if(tbody) {
+                tbody.innerHTML = '';
+                projectsList.forEach((p, i) => {
+                    tbody.innerHTML += `
+                        <tr class="hover:bg-gray-100 transition-colors">
+                            <td class="px-3 py-2 border-r border-black font-bold text-black uppercase">${p}</td>
+                            <td class="px-3 py-2 text-center">
+                                <button onclick="removeProject(${i})" class="text-black font-bold uppercase text-xs border border-black px-2 py-0.5 hover:bg-black hover:text-white bg-white">Usuń</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
+            const sel = document.getElementById('formJednostka');
+            if (sel) {
+                const currentVal = sel.value;
+                sel.innerHTML = projectsList.length === 0 ? '<option value="">-- brak (dodaj z listy) --</option>' : '';
+                projectsList.forEach(p => {
+                    const opt = document.createElement('option'); opt.value = p; opt.textContent = p;
+                    sel.appendChild(opt);
+                });
+                if (projectsList.includes(currentVal)) sel.value = currentVal;
+            }
+            const dlProj = document.getElementById('dl-projects');
+            if (dlProj) {
+                dlProj.innerHTML = '';
+                projectsList.forEach(p => {
+                    const opt = document.createElement('option'); opt.value = p; dlProj.appendChild(opt);
+                });
+            }
+        };
+
+        window.addProject = async function() {
+            const val = document.getElementById('formNewProjectName').value.trim().toUpperCase();
+            if (!val) return;
+            if (!projectsList.includes(val)) {
+                projectsList.push(val);
+                document.getElementById('formNewProjectName').value = '';
+                renderProjectsList(); renderInduscoTable(); autoSaveToDisk();
+            } else { await customAlert('Projekt już istnieje na liście!'); }
+        };
+
+        window.removeProject = async function(index) {
+            if(await customConfirm("Czy jesteś pewien, że chcesz usunąć ten projekt z listy? (Nie usunie to istniejących już obliczeń)")) {
+                projectsList.splice(index, 1); renderProjectsList(); renderInduscoTable(); autoSaveToDisk();
+            }
+        };
+
+        window.renderUsersTable = function() {
+            const tbody = document.getElementById('usersTableBody');
+            if(!tbody) return;
+            tbody.innerHTML = '';
+            const isAdmin = currentUser && currentUser.role === 'admin';
+            const colAction = document.getElementById('colUserAction');
+            if (colAction) colAction.style.display = isAdmin ? 'table-cell' : 'none';
+
+            appUsers.forEach((u, i) => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-gray-100 transition-colors border-b border-black";
+                const rolaText = u.role === 'admin' ? 'Administrator' : 'Użytkownik';
+                let btnHtml = isAdmin ? `<td class="px-3 py-2 text-center"><button onclick="removeUser(${i})" class="text-black font-bold uppercase text-xs border border-black px-2 py-0.5 hover:bg-black hover:text-white bg-white">Usuń</button></td>` : '';
+                tr.innerHTML = `
+                    <td class="px-3 py-2 border-r border-black font-bold text-black">${u.login}</td>
+                    <td class="px-3 py-2 border-r border-black text-black">${u.name || '-'}</td>
+                    <td class="px-3 py-2 border-r border-black font-bold text-black uppercase">${rolaText}</td>
+                    <td class="px-3 py-2 border-black text-black ${isAdmin ? 'border-r' : ''}">********</td>
+                    ${btnHtml}
+                `;
+                tbody.appendChild(tr);
+            });
+        };
+
+        window.addNewUser = async function() {
+            const login = document.getElementById('formNewUserLogin').value.trim();
+            const pass = document.getElementById('formNewUserPass').value.trim();
+            const name = document.getElementById('formNewUserName').value.trim();
+            const isAdmin = document.getElementById('formNewUserAdmin').checked;
+            
+            if(!login || !pass || !name) { await customAlert("Wypełnij wszystkie pola oznaczone gwiazdką!"); return; }
+            if(appUsers.find(u => u.login === login)) { await customAlert("Użytkownik już istnieje!"); return; }
+            
+            const pin = await customPrompt("Podaj kod autoryzacji (PIN), aby dodać użytkownika:", 'password');
+            if (pin === "4321") {
+                appUsers.push({ login, password: pass, name: name, role: isAdmin ? 'admin' : 'user' });
+                document.getElementById('formNewUserLogin').value = ''; document.getElementById('formNewUserPass').value = '';
+                document.getElementById('formNewUserName').value = ''; document.getElementById('formNewUserAdmin').checked = false;
+                renderUsersTable(); autoSaveToDisk();
+            } else if (pin !== null) await customAlert("Nieprawidłowy kod PIN.");
+        };
+
+        window.removeUser = async function(index) {
+            if(appUsers.length <= 1) { await customAlert("Nie można usunąć ostatniego użytkownika!"); return; }
+            const pin = await customPrompt("Podaj kod autoryzacji (PIN), aby usunąć użytkownika:", 'password');
+            if (pin === "4321") {
+                if (appUsers[index].login === currentUser.login) { await customAlert("Nie możesz usunąć swojego własnego konta podczas bycia zalogowanym!"); return; }
+                appUsers.splice(index, 1); renderUsersTable(); autoSaveToDisk();
+            } else if (pin !== null) await customAlert("Nieprawidłowy kod PIN.");
+        };
+
+        // --- STREAMING_CHUNK:Paints configuration and labor costs ---
+        // --- SHOPPRIMERY W WYDAJNOŚĆ ---
+        window.renderPaintTypesTable = function() {
+            const tbody = document.getElementById('paintTypesTableBody');
+            if(!tbody) return;
+            tbody.innerHTML = '';
+            paintTypes.forEach(pt => {
+                tbody.innerHTML += `
+                    <tr class="hover:bg-gray-50 border-b border-gray-300">
+                        <td class="px-3 py-1.5 border-r border-black font-bold text-black uppercase">${pt.name}</td>
+                        <td class="px-3 py-1.5 border-r border-black text-center">
+                            <input type="number" step="0.1" min="0.1" value="${pt.yieldBlachy}" oninput="updatePaintParam('${pt.id}', 'yieldBlachy', this.value)" class="w-20 text-center border border-transparent hover:border-black focus:border-black outline-none bg-transparent focus:bg-white font-bold text-black px-1 py-0.5 transition-all">
+                        </td>
+                        <td class="px-3 py-1.5 border-r border-black text-center">
+                            <input type="number" step="0.1" min="0.1" value="${pt.yieldProfile}" oninput="updatePaintParam('${pt.id}', 'yieldProfile', this.value)" class="w-20 text-center border border-transparent hover:border-black focus:border-black outline-none bg-transparent focus:bg-white font-bold text-black px-1 py-0.5 transition-all">
+                        </td>
+                        <td class="px-3 py-1.5 border-r border-black text-center">
+                            <input type="number" step="1" min="0" value="${pt.thinnerPct}" oninput="updatePaintParam('${pt.id}', 'thinnerPct', this.value)" class="w-16 text-center border border-transparent hover:border-black focus:border-black outline-none bg-transparent focus:bg-white font-bold text-black px-1 py-0.5 transition-all">
+                        </td>
+                        <td class="px-3 py-1.5 text-center">
+                            <button onclick="removePaintType('${pt.id}')" class="text-black font-bold uppercase text-[10px] border border-black px-2 py-0.5 hover:bg-black hover:text-white bg-white">Usuń</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        };
+
+        window.updateLaborCosts = function() {
+            laborCosts.blachy = parseFloat(document.getElementById('costBlachy').value) || 4.20;
+            laborCosts.profile = parseFloat(document.getElementById('costProfile').value) || 6.80;
+            calculateCosts(); autoSaveToDisk();
+        };
+
+        window.updatePaintParam = function(id, field, value) {
+            const pt = paintTypes.find(p => p.id === id);
+            if(pt) {
+                pt[field] = parseFloat(value.replace(',', '.')) || 0;
+                calculateCosts(); autoSaveToDisk();
+            }
+        };
+
+        window.addPaintType = async function() {
+            const name = document.getElementById('newPaintName').value.trim().toUpperCase();
+            if(!name) { await customAlert('Podaj nazwę farby!'); return; }
+            if(paintTypes.find(p => p.id === name)) { await customAlert('Farba już istnieje!'); return; }
+            
+            paintTypes.push({ id: name, name: name, yieldBlachy: 10.0, yieldProfile: 6.5, thinnerPct: 14 });
+            document.getElementById('newPaintName').value = '';
+            
+            renderPaintTypesTable(); updatePaintDropdowns(); renderDailySidebar(); renderHistoryTable(); autoSaveToDisk();
+        };
+
+        window.removePaintType = async function(id) {
+            if(['INTERPLATE', 'SIGMAWELD'].includes(id)) { await customAlert('Nie można usunąć podstawowych farb systemowych.'); return; }
+            if(await customConfirm(`Czy na pewno usunąć farbę ${id}?`)) {
+                paintTypes = paintTypes.filter(p => p.id !== id);
+                renderPaintTypesTable(); updatePaintDropdowns(); renderDailySidebar(); renderHistoryTable(); calculateCosts(); autoSaveToDisk();
+            }
+        };
+
+        window.getInduscoPaintsHtml = function() {
+            return paintTypes.map(pt => `
+                <optgroup label="${pt.name}">
+                    <option value="${pt.id} - Szary">Szary</option>
+                    <option value="${pt.id} - Czerwony">Czerwony</option>
+                    <option value="${pt.id} - Zielony">Zielony</option>
+                    <option value="${pt.id} - Rozcieńczalnik">Rozcieńczalnik</option>
+                </optgroup>
+            `).join('');
+        };
+
+        window.updatePaintDropdowns = function() {
+            const paintOptionsHtml = paintTypes.map(pt => `<option value="${pt.id}">${pt.name}</option>`).join('');
+            const formFarba = document.getElementById('formFarba');
+            if(formFarba) {
+                const currentVal = formFarba.value; formFarba.innerHTML = paintOptionsHtml;
+                if(paintTypes.find(p => p.id === currentVal)) formFarba.value = currentVal;
+            }
+            const dlShop = document.getElementById('dl-shopprimer');
+            if(dlShop) dlShop.innerHTML = paintTypes.map(pt => `<option value="${pt.id}"></option>`).join('');
+
+            ['histFilterPaint', 'induscoFilterPaint'].forEach(selId => {
+                const sel = document.getElementById(selId);
+                if(sel) {
+                    const val = sel.value; sel.innerHTML = `<option value="">Wszystkie</option>` + paintOptionsHtml; sel.value = val || "";
+                }
+            });
+
+            const induscoHtml = window.getInduscoPaintsHtml();
+            const editInduscoPaint = document.getElementById('editInduscoPaint');
+            if(editInduscoPaint) editInduscoPaint.innerHTML = induscoHtml;
+
+            document.querySelectorAll('.indusco-paint-select').forEach(sel => {
+                const val = sel.value; sel.innerHTML = induscoHtml; sel.value = val;
+            });
+        };
+
+        // --- STREAMING_CHUNK:App Initialization ---
+        // --- DZIAŁANIE APLIKACJI I BAZY ---
+        window.addEventListener('DOMContentLoaded', async () => {
+            try {
+                document.getElementById('induscoDate').valueAsDate = new Date();
+                document.getElementById('protocolDateInput').valueAsDate = new Date(); 
+                initGatunkiSelect(); renderColorsTable(); renderDbTable(); renderPaintTypesTable();
+                updatePaintDropdowns(); renderHistoryTable(); renderUsersTable(); renderProjectsList();
+                renderInduscoTable(); addInduscoBulkRow(); toggleFormFields(); 
+            } catch (e) { console.error("Błąd inicjalizacji: ", e); }
+
+            if (!USE_FIREBASE) {
+                let autoLoaded = false;
+                try {
+                    const response = await fetch('./Status/status.json', { cache: "no-store" });
+                    if (response.ok) {
+                        const text = await response.text();
+                        if (text && text !== "null") { await applyProjectData(text, true); autoLoaded = true; }
+                    }
+                } catch (err) {}
+                if (!autoLoaded) {
+                    document.getElementById('mainAppContainer').classList.add('locked-ui');
+                    const initialOverlay = document.getElementById('initialLoadOverlay');
+                    if (initialOverlay) { initialOverlay.classList.remove('hidden'); initialOverlay.classList.add('flex'); }
+                }
+            } else { document.getElementById('mainAppContainer').classList.add('locked-ui'); }
+        });
+
+        window.cancelEditMode = function() {
+            window.editingProtocolId = null;
+            const saveBtn = document.getElementById('btnSaveToSummary');
+            if (saveBtn) {
+                saveBtn.innerHTML = 'Zapisz do Zestawienia';
+                if (inputData.length > 0 && !isPreviewMode) {
+                    saveBtn.className = "bg-green-600 text-white border border-black hover:bg-green-700 px-6 py-2 text-sm font-bold transition flex items-center gap-1.5 uppercase shadow-md";
+                } else {
+                    saveBtn.className = "bg-black text-white border border-black hover:bg-gray-800 px-6 py-2 text-sm font-bold transition flex items-center gap-1.5 uppercase shadow-md";
+                }
+            }
+        };
+
+        window.addEventListener('beforeprint', () => {
+            const dateStr = new Date().toLocaleDateString('pl-PL');
+            document.querySelectorAll('.print-history-only .print-date').forEach(el => el.textContent = dateStr);
+        });
+
+        window.updatePrintHeaders = function(newProtocolNum = null) {
+            let projName = document.getElementById('formJednostka') ? document.getElementById('formJednostka').value.trim() : "";
+            if (!projName && inputData.length > 0 && inputData[0].Jednostka) projName = inputData[0].Jednostka;
+            
+            // Clean suffix just as a safe fallback in case someone typed it manually
+            if (projName.includes(" - BLACHY")) projName = projName.replace(" - BLACHY", "");
+            if (projName.includes(" - PROFILE")) projName = projName.replace(" - PROFILE", "");
+            
+            document.querySelectorAll('.print-project-name').forEach(el => el.textContent = projName || "-");
+
+            let protNumStr = "[ NR: SZKIC (NIEZAPISANY) ]";
+            if (newProtocolNum) {
+                protNumStr = `[ NR: ${newProtocolNum} ]`;
+            } else if (isPreviewMode && currentPreviewProtocolNumber) {
+                protNumStr = `[ NR: ${currentPreviewProtocolNumber} ]`;
+            }
+            
+            document.querySelectorAll('.print-protocol-number').forEach(el => {
+                el.textContent = protNumStr;
+                if(protNumStr.includes("SZKIC")) el.classList.add("text-gray-500", "italic");
+                else el.classList.remove("text-gray-500", "italic");
+            });
+        };
+
+        window.resetProtocolCounter = async function() {
+            if (!currentUser || currentUser.role !== 'admin') { await customAlert("Brak uprawnień administratora."); return; }
+            const pin = await customPrompt("Podaj kod autoryzacji (PIN), aby zresetować licznik numeracji kalkulacji (od 1):", 'password');
+            if (pin === "4321") {
+                if (await customConfirm("UWAGA! Numery kolejnych kalkulacji zaczną się ponownie od początku. Czy na pewno chcesz wyzerować licznik?")) {
+                    protocolCounter = 0; autoSaveToDisk();
+                    await customAlert("Licznik kalkulacji został wyzerowany. Kolejna będzie miała nr 1.");
+                    updatePrintHeaders();
+                }
+            } else if (pin !== null) await customAlert("Nieprawidłowy kod PIN.");
+        };
+
+        // --- STREAMING_CHUNK:Calculator Forms and Formula execution ---
+        // --- LOGIKA KALKULACJI ---
+        window.initGatunkiSelect = function() {
+            const select = document.getElementById('formGatunek');
+            if (!select) return;
+            select.innerHTML = '<option value="-">-- brak --</option>';
+            const dlGatunki = document.getElementById('dl-gatunki');
+            if (dlGatunki) dlGatunki.innerHTML = '';
+            steelGradesList.forEach(g => {
+                const opt = document.createElement('option'); opt.value = g; opt.textContent = g; select.appendChild(opt);
+                if (dlGatunki) { const dlOpt = document.createElement('option'); dlOpt.value = g; dlGatunki.appendChild(dlOpt); }
+            });
+        };
+
+        window.toggleFormFields = function() {
+            const typ = document.getElementById('formTyp').value;
+            const profilContainer = document.getElementById('formProfilContainer');
+            const szerokoscContainer = document.getElementById('formSzerokoscContainer');
+            const gruboscContainer = document.getElementById('formGruboscContainer');
+            const dlugoscInput = document.getElementById('formDlugosc');
+            const szerokoscInput = document.getElementById('formSzerokosc');
+
+            if (typ === 'Blacha') {
+                profilContainer.classList.add('hidden'); szerokoscContainer.classList.remove('hidden'); gruboscContainer.classList.remove('hidden'); 
+                dlugoscInput.value = "12000"; szerokoscInput.value = "3000";
+            } else if (typ === 'Płaskowniki FB') {
+                profilContainer.classList.remove('hidden'); szerokoscContainer.classList.add('hidden'); gruboscContainer.classList.remove('hidden'); 
+                window.updateProfilSelect(); dlugoscInput.value = "6000"; szerokoscInput.value = "";
+            } else {
+                profilContainer.classList.remove('hidden'); szerokoscContainer.classList.add('hidden'); gruboscContainer.classList.add('hidden'); 
+                window.updateProfilSelect(); 
+                if (typ === 'Profile HP') dlugoscInput.value = "12000"; else dlugoscInput.value = "6000";
+                szerokoscInput.value = "";
+            }
+        };
+
+        window.updateProfilSelect = function() {
+            const select = document.getElementById('formProfilSelect');
+            if(!select) return;
+            const typ = document.getElementById('formTyp').value;
+            select.innerHTML = '<option value="">-- brak --</option>';
+            if (typ === 'Blacha') return;
+            if (typ === 'Płaskowniki FB') {
+                const fbSizes = [60, 80, 100, 120, 150, 200, 250, 300, 350, 400];
+                fbSizes.forEach(size => { const option = document.createElement('option'); option.value = `FB${size}`; option.textContent = `FB${size}`; select.appendChild(option); });
+                return;
+            }
+            if (!database[typ]) return;
+            const keys = Object.keys(database[typ]).sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
+            if (keys.length === 0) return;
+            keys.forEach(k => {
+                const option = document.createElement('option'); option.value = k; option.textContent = `${k} (${formatNumber(database[typ][k], 4)} m²/m)`; select.appendChild(option);
+            });
+        };
+
+        window.addManualItem = async function() {
+            let jednostka = document.getElementById('formJednostka').value.trim();
+            if (!jednostka) { await customAlert("Wprowadź nazwę projektu przed dodaniem elementu!"); document.getElementById('formJednostka').focus(); return; }
+
+            // Clean any manual suffixes users might type just in case
+            if (jednostka.includes(" - BLACHY")) jednostka = jednostka.replace(" - BLACHY", "");
+            if (jednostka.includes(" - PROFILE")) jednostka = jednostka.replace(" - PROFILE", "");
+
+            const farba = document.getElementById('formFarba').value;
+            const typ = document.getElementById('formTyp').value;
+            const gatunek = document.getElementById('formGatunek').value;
+            let nazwa = "-", szerokosc = "", grubosc = 0;
+            
+            if (typ !== 'Blacha') {
+                nazwa = document.getElementById('formProfilSelect').value;
+                if (!nazwa) { await customAlert("Wybierz element z bazy!"); return; }
+                if (typ === 'Płaskowniki FB') {
+                    grubosc = parseFloat(document.getElementById('formGrubosc').value) || 0;
+                } else if (nazwa.includes('X') || nazwa.includes('x')) {
+                    const parts = nazwa.split(/x/i); grubosc = parseFloat(parts[parts.length - 1]) || 0;
+                }
+            } else {
+                szerokosc = parseFloat(document.getElementById('formSzerokosc').value) || 0; grubosc = parseFloat(document.getElementById('formGrubosc').value) || 0;
+            }
+
+            const dlugosc = parseFloat(document.getElementById('formDlugosc').value) || 0;
+            const ilosc = parseInt(document.getElementById('formIlosc').value) || 1;
+
+            if (dlugosc <= 0) { await customAlert("Długość musi być większa od zera!"); return; }
+            if ((typ === 'Blacha' || typ === 'Płaskowniki FB') && grubosc <= 0) { await customAlert("Grubość musi być większa od zera!"); return; }
+            if (typ === 'Blacha' && szerokosc <= 0) { await customAlert("Szerokość musi być większa od zera dla blach!"); return; }
+
+            inputData.push({ "Jednostka": jednostka, "Farba": farba, "Typ": typ, "Gatunek": gatunek, "Grubosc": grubosc, "Nazwa": nazwa, "Dlugosc": dlugosc, "Szerokosc": szerokosc, "Ilosc": ilosc });
+            window.clearAddForm(); calculate();
+
+            const addedItem = resultsData[resultsData.length - 1];
+            if (addedItem) {
+                const feedback = document.getElementById('lastAddedFeedback');
+                feedback.innerHTML = `DODANO ELEMENT: ${typ === 'Blacha' ? 'Blacha' : addedItem.nazwa}`;
+                feedback.classList.remove('hidden');
+                if (window.feedbackTimeout) clearTimeout(window.feedbackTimeout);
+                window.feedbackTimeout = setTimeout(() => { feedback.classList.add('hidden'); }, 3000);
+            }
+        };
+
+        window.clearAddForm = function() {
+            const typ = document.getElementById('formTyp') ? document.getElementById('formTyp').value : 'Blacha';
+            if (document.getElementById('formGrubosc')) document.getElementById('formGrubosc').value = '';
+            if (document.getElementById('formIlosc')) document.getElementById('formIlosc').value = '1';
+            
+            if (typ === 'Blacha') {
+                if (document.getElementById('formDlugosc')) document.getElementById('formDlugosc').value = '12000';
+                if (document.getElementById('formSzerokosc')) document.getElementById('formSzerokosc').value = '3000';
+            } else if (typ === 'Profile HP') {
+                if (document.getElementById('formDlugosc')) document.getElementById('formDlugosc').value = '12000';
+                if (document.getElementById('formSzerokosc')) document.getElementById('formSzerokosc').value = '';
+            } else {
+                if (document.getElementById('formDlugosc')) document.getElementById('formDlugosc').value = '6000';
+                if (document.getElementById('formSzerokosc')) document.getElementById('formSzerokosc').value = '';
+            }
+        };
+
+        window.clearInputData = async function() {
+            if(await customConfirm("Czy na pewno chcesz wyczyścić listę elementów?")) {
+                cancelEditMode(); inputData = []; document.getElementById('protocolDateInput').valueAsDate = new Date(); 
+                calculate();
+                document.getElementById('resultsSection').classList.add('hidden'); document.getElementById('resultsSection').classList.remove('flex');
+            }
+        };
+
+        window.removeInputItem = function(index) {
+            inputData.splice(index, 1); calculate();
+            if (inputData.length === 0) {
+                document.getElementById('resultsSection').classList.add('hidden'); document.getElementById('resultsSection').classList.remove('flex');
+            }
+        };
+
+        window.updateArea = function(index, value) {
+            if (value === "" || value.trim() === "") inputData[index].manualArea = null; 
+            else {
+                const num = parseFloat(value.replace(/[\s\u00A0]/g, '').replace(',', '.'));
+                if (!isNaN(num) && num >= 0) inputData[index].manualArea = num;
+            }
+            calculate(); 
+        };
+
+        window.updateUnit = function(index, value) {
+            if (value && value.trim() !== "") { inputData[index].Jednostka = value.trim().toUpperCase(); calculate(); }
+        };
+
+        window.updateRowData = function(index, field, value) {
+            if (field === 'Farba' || field === 'Gatunek') inputData[index][field] = value.toUpperCase();
+            else if (field === 'Ilosc') inputData[index][field] = parseInt(value) || 1;
+            else if (field === 'Szerokosc' || field === 'Dlugosc' || field === 'Grubosc') inputData[index][field] = value === "" ? 0 : (parseFloat(value.toString().replace(',', '.')) || 0);
+            else if (field === 'Nazwa') inputData[index][field] = value.toUpperCase().replace(/[\.\$#\[\]\/]/g, ',');
+            else if (field === 'Typ') {
+                inputData[index][field] = value;
+                if (value === 'Blacha') inputData[index]['Nazwa'] = '-';
+            }
+            inputData[index].manualArea = null; calculate();
+        };
+
+        // --- STREAMING_CHUNK:Results Generation and Table updates ---
+        window.calculate = function() {
+            resultsData = []; let totalAreaSum = 0;
+            updatePrintHeaders();
+
+            inputData.forEach((row, index) => {
+                let farba = row.Farba || "Nie wybrano";
+                const jednostka = row.Jednostka, typ = row.Typ, gatunek = row.Gatunek;
+                const typLower = typ.toLowerCase(), nazwa = row.Nazwa;
+                const dlugosc = row.Dlugosc, szerokosc = row.Szerokosc, grubosc = row.Grubosc, ilosc = row.Ilosc;
+                
+                let powierzchnia = 0, mnoznik = "-", ostatecznyTyp = typ;
+
+                if (typLower.includes('blach') || typLower.includes('plate')) {
+                    ostatecznyTyp = "Blacha";
+                    if (dlugosc > 0 && szerokosc > 0) { powierzchnia = (dlugosc / 1000) * (szerokosc / 1000) * ilosc * 2; mnoznik = formatNumber((szerokosc / 1000) * 2, 4); }
+                } else if (typ === 'Płaskowniki FB' || typLower.includes('fb')) {
+                    ostatecznyTyp = "Płaskowniki FB";
+                    const match = nazwa.match(/\d+/); const szerokoscZNazwy = match ? parseInt(match[0]) : 0;
+                    if (szerokoscZNazwy > 0) { const wspl = 2 * (szerokoscZNazwy / 1000); mnoznik = formatNumber(wspl, 4); if (dlugosc > 0) powierzchnia = (dlugosc / 1000) * wspl * ilosc; }
+                } else {
+                    const searchKey = nazwa.toUpperCase(); let wspl = undefined;
+                    for (const cat in database) { if (database[cat] && database[cat][searchKey] !== undefined) { wspl = database[cat][searchKey]; ostatecznyTyp = cat; break; } }
+                    if (wspl !== undefined) { mnoznik = formatNumber(wspl, 4); if (dlugosc > 0) powierzchnia = (dlugosc / 1000) * wspl * ilosc; }
+                }
+
+                let isManual = false;
+                if (row.manualArea !== undefined && row.manualArea !== null && row.manualArea !== "") { powierzchnia = parseFloat(row.manualArea); isManual = true; }
+                totalAreaSum += powierzchnia;
+                
+                const shopPrimerInfo = getShopprimerColor(gatunek, grubosc);
+                if (farba === 'INTERPLATE' && shopPrimerInfo.name === 'Zielony' && paintTypes.find(p=>p.id==='SIGMAWELD')) { farba = 'SIGMAWELD'; inputData[index].Farba = 'SIGMAWELD'; }
+
+                resultsData.push({ originalIndex: index, jednostka: jednostka, farba: farba, lp: index + 1, typ: ostatecznyTyp, gatunek: gatunek, grubosc: grubosc > 0 ? grubosc : "-", nazwa: nazwa || "-", dlugosc: dlugosc || "-", szerokosc: szerokosc || "-", ilosc: ilosc, mnoznik: mnoznik, powierzchnia: powierzchnia, isManual: isManual, kolorInfo: shopPrimerInfo });
+            });
+
+            renderTable();
+            document.getElementById('totalArea').textContent = formatNumber(totalAreaSum, 2);
+            document.getElementById('resultsSection').classList.remove('hidden'); document.getElementById('resultsSection').classList.add('flex');
+            
+            const btnSave = document.getElementById('btnSaveToSummary');
+            if (btnSave) {
+                if (window.editingProtocolId) {
+                    btnSave.className = "bg-blue-600 text-white border border-black hover:bg-blue-800 px-6 py-2 text-sm font-bold transition flex items-center gap-1.5 uppercase shadow-md";
+                } else if (inputData.length > 0 && !isPreviewMode) {
+                    btnSave.className = "bg-green-600 text-white border border-black hover:bg-green-700 px-6 py-2 text-sm font-bold transition flex items-center gap-1.5 uppercase shadow-md";
+                } else {
+                    btnSave.className = "bg-black text-white border border-black hover:bg-gray-800 px-6 py-2 text-sm font-bold transition flex items-center gap-1.5 uppercase shadow-md";
+                }
+            }
+            
+            updateProtocolDateVisuals(); calculateCosts(); autoSaveToDisk();
+        };
+
+        window.calculateCosts = function() {
+            const container = document.getElementById('costsBreakdownContainer');
+            if (!container) return;
+            container.innerHTML = '';
+            if (resultsData.length === 0) { container.innerHTML = '<div class="text-xs border border-black p-2 text-black font-bold uppercase bg-white text-center">Brak elementów do wyliczenia.</div>'; return; }
+
+            const unitsData = {}; let grandTotalCost = 0;
+            resultsData.forEach(item => {
+                if (item.powierzchnia <= 0) return;
+                const isBlacha = item.typ === 'Blacha';
+                const matType = isBlacha ? 'BLACHY' : 'PROFILE';
+                const rawUnitName = (item.jednostka || "BRAK JEDNOSTKI");
+                const unitKey = rawUnitName + " - " + matType;
+                
+                if (!unitsData[unitKey]) {
+                    unitsData[unitKey] = { rawName: rawUnitName, costBlachy: 0, costProfile: 0, paintVolumes: {} };
+                    paintTypes.forEach(pt => { unitsData[unitKey].paintVolumes[pt.id] = { totalVolume: 0, colors: {}, thinnerPct: pt.thinnerPct }; });
+                }
+
+                const appliedCostRate = isBlacha ? laborCosts.blachy : laborCosts.profile;
+                const itemCost = item.powierzchnia * appliedCostRate;
+                if (isBlacha) unitsData[unitKey].costBlachy += itemCost; else unitsData[unitKey].costProfile += itemCost;
+                grandTotalCost += itemCost;
+
+                const brandKey = item.farba.toUpperCase();
+                const ptConfig = paintTypes.find(p => p.id === brandKey) || paintTypes[0]; 
+                if(!unitsData[unitKey].paintVolumes[brandKey]) unitsData[unitKey].paintVolumes[brandKey] = { totalVolume: 0, colors: {}, thinnerPct: ptConfig.thinnerPct };
+                
+                const appliedYield = isBlacha ? ptConfig.yieldBlachy : ptConfig.yieldProfile;
+                const itemPaintVol = item.powierzchnia / appliedYield;
+                unitsData[unitKey].paintVolumes[brandKey].totalVolume += itemPaintVol;
+
+                const colorName = item.kolorInfo.name; const colorHex = item.kolorInfo.hex;
+                if (!unitsData[unitKey].paintVolumes[brandKey].colors[colorName]) unitsData[unitKey].paintVolumes[brandKey].colors[colorName] = { hex: colorHex, volume: 0 };
+                unitsData[unitKey].paintVolumes[brandKey].colors[colorName].volume += itemPaintVol;
+            });
+
+            for (const [unitKey, data] of Object.entries(unitsData)) {
+                const unitTotalCost = data.costBlachy + data.costProfile;
+                const generateBrandHtml = (brandKey) => {
+                    const bData = data.paintVolumes[brandKey];
+                    if (!bData) return `<div class="text-[9px] font-bold mt-1 uppercase text-black">Brak elementów.</div>`;
+                    let html = '';
+                    if (bData.totalVolume > 0) {
+                        html += '<div class="space-y-0.5 mt-1">';
+                        for (const [cName, cData] of Object.entries(bData.colors)) {
+                            html += `<div class="flex justify-between items-center text-[9px] border border-black p-0.5 bg-white"><div class="flex items-center gap-1"><span class="w-2.5 h-2.5 border border-black block" style="background-color: ${cData.hex}"></span><span class="font-bold text-black uppercase">${cName}</span></div><span class="font-bold text-black">${formatNumber(cData.volume, 2)} L</span></div>`;
+                        }
+                        html += '</div>';
+                        const thinnerVol = bData.totalVolume * (bData.thinnerPct / 100);
+                        html += `<div class="mt-1 border-t border-black flex justify-between items-center pt-0.5 text-[9px] bg-white"><span class="font-bold text-black uppercase">Rozcieńczalnik:</span><span class="font-bold text-black">${formatNumber(thinnerVol, 2)} L</span></div>`;
+                    } else html = `<div class="text-[9px] font-bold mt-1 uppercase text-black">Brak elementów.</div>`;
+                    return html;
+                };
+
+                const unitCard = document.createElement('div'); unitCard.className = "border border-black p-2 bg-white break-inside-avoid";
+                let dynamicColumnsHtml = paintTypes.map(pt => `<div class="border border-black p-1 bg-white"><h4 class="text-[10px] font-bold text-black border-b border-black pb-0.5 uppercase truncate" title="${pt.name}">${pt.name}</h4>${generateBrandHtml(pt.id)}</div>`).join('');
+                const colCountClass = Math.min(paintTypes.length + 1, 5);
+
+                unitCard.innerHTML = `<h3 class="text-xs font-bold uppercase mb-1 pb-0.5 border-b border-black flex items-center justify-between text-black"><span>KALKULACJA: ${data.rawName}</span><span class="border border-black px-1">SUMA: ${formatNumber(unitTotalCost, 2)} PLN</span></h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-${colCountClass} gap-2"><div class="border border-black p-1 bg-white"><h4 class="text-[10px] font-bold text-black uppercase border-b border-black pb-0.5">Koszty</h4><div class="space-y-0.5 text-[9px] mt-1 font-bold text-black"><div class="flex justify-between"><span>BLACHY:</span><span>${formatNumber(data.costBlachy, 2)} PLN</span></div><div class="flex justify-between"><span>PROFILE/RURY:</span><span>${formatNumber(data.costProfile, 2)} PLN</span></div><div class="border-t border-black mt-0.5 pt-0.5 flex justify-between"><span>RAZEM:</span><span>${formatNumber(unitTotalCost, 2)} PLN</span></div></div></div>${dynamicColumnsHtml}</div>`;
+                container.appendChild(unitCard);
+            }
+            const grandTotalCard = document.createElement('div'); grandTotalCard.className = "mt-2 text-right break-inside-avoid print-hide";
+            grandTotalCard.innerHTML = `<div class="inline-block bg-white text-black p-1.5 border border-black font-bold uppercase text-xs">CAŁKOWITY KOSZT: ${formatNumber(grandTotalCost, 2)} PLN</div>`;
+            container.appendChild(grandTotalCard); autoSaveToDisk(); 
+        };
+
+        // --- STREAMING_CHUNK:Results Data Table Rendering ---
+        window.renderTable = function() {
+            const tbody = document.getElementById('resultsTableBody'); tbody.innerHTML = '';
+            const paintOptionsHtml = paintTypes.map(pt => `<option value="${pt.id}">${pt.name}</option>`).join('');
+
+            resultsData.forEach(row => {
+                const tr = document.createElement('tr'); tr.className = "hover:bg-gray-100 transition-colors border-b border-black";
+                const deleteBtnHtml = isPreviewMode ? '' : `<button onclick="removeInputItem(${row.originalIndex})" class="text-black font-bold uppercase text-xs border border-black px-1 hover:bg-black hover:text-white" title="Usuń pozycję">X</button>`;
+                const editInputAttr = isPreviewMode ? 'disabled' : '';
+                const editInputClass = isPreviewMode ? 'w-20 bg-gray-200 border-none outline-none text-right font-bold text-black px-1 py-0.5' : `w-20 bg-transparent hover:bg-gray-200 focus:bg-gray-200 border border-transparent hover:border-black focus:border-black outline-none text-right font-bold ${row.isManual ? 'text-blue-600' : 'text-black'} px-1 py-0.5 transition-all`;
+                const unitInputClass = isPreviewMode ? 'w-24 bg-transparent border-none outline-none font-bold text-black uppercase px-1 py-0.5' : 'w-24 bg-transparent hover:bg-gray-200 border border-transparent focus:bg-white focus:border-black outline-none font-bold text-black uppercase px-1 py-0.5 transition-all';
+                const farbaCell = isPreviewMode ? `<span class="text-[10px] font-bold text-black">${row.farba}</span>` : `<select onchange="updateRowData(${row.originalIndex}, 'Farba', this.value)" class="w-full bg-transparent border border-transparent hover:border-black focus:border-black outline-none font-bold text-[10px] text-black transition-all">${paintOptionsHtml}</select>`;
+                
+                const typOptions = ["Blacha", "Profile HP", "Kątowniki L", "Płaskowniki FB", "Ceowniki UNP", "Teowniki T", "Profile IPE", "Profile HEB-HEA", "Profile półokrągłe HR", "Rury kwadratowe RHS", "Rury", "Pręty okrągłe (Ø)"];
+                let typOptionsHtml = typOptions.map(t => `<option value="${t}" ${row.typ === t ? 'selected' : ''}>${t}</option>`).join('');
+                const typCell = isPreviewMode ? row.typ : `<select onchange="updateRowData(${row.originalIndex}, 'Typ', this.value)" class="w-[100px] bg-transparent border border-transparent hover:border-black focus:border-black outline-none font-bold text-[10px] text-black uppercase transition-all">${typOptionsHtml}</select>`;
+                const gatunekCell = isPreviewMode ? row.gatunek : `<input type="text" value="${row.gatunek}" onchange="updateRowData(${row.originalIndex}, 'Gatunek', this.value)" list="dl-gatunki" class="w-14 bg-transparent hover:bg-gray-200 focus:bg-white border border-transparent hover:border-black focus:border-black outline-none font-bold text-black px-1 py-0.5 transition-all">`;
+                const gruboscVal = row.grubosc !== '-' ? row.grubosc : '';
+                const gruboscCell = isPreviewMode ? (typeof row.grubosc === 'number' ? formatNumber(row.grubosc, 1) : row.grubosc) : `<input type="number" step="0.1" value="${gruboscVal}" onchange="updateRowData(${row.originalIndex}, 'Grubosc', this.value)" class="w-12 text-right bg-transparent hover:bg-gray-200 focus:bg-white border border-transparent hover:border-black focus:border-black outline-none text-black font-bold px-1 py-0.5 transition-all">`;
+                const nazwaVal = row.nazwa !== '-' ? row.nazwa : '';
+                const nazwaCell = isPreviewMode ? row.nazwa : `<input type="text" value="${nazwaVal}" onchange="updateRowData(${row.originalIndex}, 'Nazwa', this.value)" list="dl-profile" class="w-20 bg-transparent hover:bg-gray-200 focus:bg-white border border-transparent hover:border-black focus:border-black outline-none font-bold text-black px-1 py-0.5 transition-all">`;
+                const szerokoscVal = row.szerokosc !== '-' ? row.szerokosc : '';
+                const szerokoscCell = isPreviewMode ? (typeof row.szerokosc === 'number' ? formatNumber(row.szerokosc, 0) : row.szerokosc) : `<input type="number" step="1" value="${szerokoscVal}" onchange="updateRowData(${row.originalIndex}, 'Szerokosc', this.value)" class="w-14 text-center bg-transparent hover:bg-gray-200 focus:bg-white border border-transparent hover:border-black focus:border-black outline-none text-black px-1 py-0.5 transition-all">`;
+                const dlugoscVal = row.dlugosc !== '-' ? row.dlugosc : '';
+                const dlugoscCell = isPreviewMode ? (typeof row.dlugosc === 'number' ? formatNumber(row.dlugosc, 0) : row.dlugosc) : `<input type="number" step="1" value="${dlugoscVal}" onchange="updateRowData(${row.originalIndex}, 'Dlugosc', this.value)" class="w-14 text-center bg-transparent hover:bg-gray-200 focus:bg-white border border-transparent hover:border-black focus:border-black outline-none text-black px-1 py-0.5 transition-all">`;
+                const iloscCell = isPreviewMode ? formatNumber(row.ilosc, 0) : `<input type="number" step="1" value="${row.ilosc}" onchange="updateRowData(${row.originalIndex}, 'Ilosc', this.value)" class="w-12 text-center bg-transparent hover:bg-gray-200 focus:bg-white border border-transparent hover:border-black focus:border-black outline-none font-bold text-black px-1 py-0.5 transition-all">`;
+
+                tr.innerHTML = `
+                    <td class="px-3 py-1.5 border-r border-black text-black">${row.lp}</td>
+                    <td class="px-3 py-1.5 border-r border-black font-bold text-black uppercase"><input type="text" ${editInputAttr} value="${row.jednostka}" onchange="updateUnit(${row.originalIndex}, this.value)" class="${unitInputClass}" title="Zmień projekt dla elementu" list="dl-projects"></td>
+                    <td class="px-3 py-1.5 border-r border-black">${farbaCell}</td>
+                    <td class="px-3 py-1.5 border-r border-black text-black uppercase">${typCell}</td>
+                    <td class="px-3 py-1.5 border-r border-black font-bold text-black">${gatunekCell}</td>
+                    <td class="px-3 py-1.5 border-r border-black text-right text-black font-bold">${gruboscCell}</td>
+                    <td class="px-3 py-1.5 border-r border-black font-bold text-black">${nazwaCell}</td>
+                    <td class="px-3 py-1.5 border-r border-black text-center text-black">${szerokoscCell}</td>
+                    <td class="px-3 py-1.5 border-r border-black text-center text-black">${dlugoscCell}</td>
+                    <td class="px-3 py-1.5 border-r border-black text-center font-bold">${iloscCell}</td>
+                    <td class="px-3 py-1.5 border-r border-black text-right text-black">${row.mnoznik}</td>
+                    <td class="px-3 py-1.5 border-r border-black text-right font-bold bg-white"><input type="text" ${editInputAttr} value="${row.powierzchnia > 0 || row.isManual ? formatNumber(row.powierzchnia, 2) : ''}" onchange="updateArea(${row.originalIndex}, this.value)" class="${editInputClass}" title="Edytuj pow."></td>
+                    <td class="px-3 py-1.5 border-r border-black"><div class="flex items-center gap-1.5" title="${row.kolorInfo.name}"><span class="w-3 h-3 border border-black block" style="background-color: ${row.kolorInfo.hex}"></span><span class="text-[10px] font-bold text-black uppercase truncate max-w-[80px]">${row.kolorInfo.name}</span></div></td>
+                    <td class="px-3 py-1.5 text-center print-hide action-col">${deleteBtnHtml}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+            resultsData.forEach(row => { if (!isPreviewMode) { const sel = tbody.children[row.originalIndex]?.querySelector('select'); if(sel) sel.value = row.farba; } });
+            document.querySelectorAll('.action-col').forEach(el => { if(isPreviewMode) el.classList.add('hidden'); else el.classList.remove('hidden'); });
+        };
+
+        // --- STREAMING_CHUNK:History Save Mechanics ---
+        window.saveToSummaryInternal = async function() {
+            const dateInputVal = document.getElementById('protocolDateInput').value;
+            const dateStr = formatISOToPL(dateInputVal) || new Date().toLocaleDateString('pl-PL');
+            const currentUnits = {};
+
+            resultsData.forEach((item) => {
+                if (item.powierzchnia <= 0) return;
+                const isBlacha = item.typ === 'Blacha';
+                const matType = isBlacha ? 'BLACHY' : 'PROFILE';
+                const rawUnit = (item.jednostka || "Brak jednostki");
+                // Klucz wewnętrzny do rozdzielenia protokołów
+                const unitKey = rawUnit + " - " + matType; 
+                
+                if (!currentUnits[unitKey]) {
+                    currentUnits[unitKey] = { rawName: rawUnit, area: 0, cost: 0, areaBlachy: 0, areaProfile: 0, brandStats: {}, items: [] };
+                    paintTypes.forEach(pt => currentUnits[unitKey].brandStats[pt.id] = { vol: 0, thinner: 0, colors: {}, pct: pt.thinnerPct });
+                }
+                
+                currentUnits[unitKey].area += item.powierzchnia;
+                currentUnits[unitKey].items.push(inputData[item.originalIndex]);
+                const costRate = isBlacha ? laborCosts.blachy : laborCosts.profile;
+                currentUnits[unitKey].cost += item.powierzchnia * costRate;
+                currentUnits[unitKey].areaBlachy += isBlacha ? item.powierzchnia : 0;
+                currentUnits[unitKey].areaProfile += !isBlacha ? item.powierzchnia : 0;
+
+                const brandKey = item.farba.toUpperCase();
+                const ptConfig = paintTypes.find(p => p.id === brandKey) || paintTypes[0]; 
+                if(!currentUnits[unitKey].brandStats[brandKey]) currentUnits[unitKey].brandStats[brandKey] = { vol: 0, thinner: 0, colors: {}, pct: ptConfig.thinnerPct };
+                
+                const yieldRate = isBlacha ? ptConfig.yieldBlachy : ptConfig.yieldProfile;
+                const vol = item.powierzchnia / yieldRate;
+                currentUnits[unitKey].brandStats[brandKey].vol += vol;
+                const cName = item.kolorInfo.name;
+                currentUnits[unitKey].brandStats[brandKey].colors[cName] = (currentUnits[unitKey].brandStats[brandKey].colors[cName] || 0) + vol;
+            });
+            
+            const currentYear = new Date().getFullYear();
+            const generatedNumbers = [];
+
+            let existingEntryIndex = window.editingProtocolId ? printHistory.findIndex(e => e.id.toString() === window.editingProtocolId.toString()) : -1;
+
+            if (existingEntryIndex !== -1) {
+                const unitKeys = Object.keys(currentUnits);
+                if (unitKeys.length > 1) { await customAlert("Podczas edycji wszystkie elementy w tabeli muszą należeć do jednego, oryginalnego projektu (i rodzaju materiału: BLACHY lub PROFILE)!"); return; }
+                const unitKey = unitKeys[0]; const data = currentUnits[unitKey];
+                let totalThinner = 0;
+                paintTypes.forEach(pt => {
+                    if(data.brandStats[pt.id]) { data.brandStats[pt.id].thinner = data.brandStats[pt.id].vol * (data.brandStats[pt.id].pct / 100); totalThinner += data.brandStats[pt.id].thinner; }
+                });
+
+                const oldEntry = printHistory[existingEntryIndex];
+                const currUserStr = currentUser ? (currentUser.name || currentUser.login) : "System";
+                const editDateStr = new Date().toLocaleString('pl-PL', {day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit'});
+                const authorStr = oldEntry.author + `<br><span class="text-[9px] text-gray-600 font-normal">[Edycja: ${currUserStr} ${editDateStr}]</span>`;
+
+                printHistory[existingEntryIndex] = {
+                    id: oldEntry.id, protocolNumber: oldEntry.protocolNumber, projectName: data.rawName, date: dateStr, unit: data.rawName, area: data.area, cost: data.cost, areaBlachy: data.areaBlachy, areaProfile: data.areaProfile, brandStats: data.brandStats, thinnerVol: totalThinner, isError: oldEntry.isError, author: authorStr, items: JSON.parse(JSON.stringify(data.items))
+                };
+                generatedNumbers.push(oldEntry.protocolNumber);
+                cancelEditMode();
+            } else {
+                for (const [unitKey, data] of Object.entries(currentUnits)) {
+                    let totalThinner = 0;
+                    paintTypes.forEach(pt => {
+                        if(data.brandStats[pt.id]) { data.brandStats[pt.id].thinner = data.brandStats[pt.id].vol * (data.brandStats[pt.id].pct / 100); totalThinner += data.brandStats[pt.id].thinner; }
+                    });
+                    protocolCounter++;
+                    const newProtocolNumber = `${protocolCounter}/${currentYear}`;
+                    generatedNumbers.push(newProtocolNumber);
+                    printHistory.push({
+                        id: Date.now() + Math.random().toString(36).substr(2, 9), protocolNumber: newProtocolNumber, projectName: data.rawName, date: dateStr, unit: data.rawName, area: data.area, cost: data.cost, areaBlachy: data.areaBlachy, areaProfile: data.areaProfile, brandStats: data.brandStats, thinnerVol: totalThinner, isError: false, author: currentUser ? (currentUser.name || currentUser.login) : "Nieznany", items: JSON.parse(JSON.stringify(data.items))
+                    });
+                }
+            }
+            updatePrintHeaders(generatedNumbers.join(', '));
+            renderHistoryTable();
+            if (document.getElementById('view-daily') && document.getElementById('view-daily').classList.contains('block')) renderDailyLedger();
+            autoSaveToDisk();
+        };
+
+        window.saveToSummary = async function() {
+            if (resultsData.length === 0) { await customAlert("Brak elementów do zapisania!"); return; }
+            await saveToSummaryInternal();
+            inputData = []; document.getElementById('protocolDateInput').valueAsDate = new Date(); calculate(); clearAddForm();
+            await customAlert("Pomyślnie zapisano do Zestawienia Kalkulacji. Formularz został wyczyszczony.");
+        };
+
+        window.printProtocol = async function() {
+            if (resultsData.length === 0) { await customAlert("Brak danych do wydruku!"); return; }
+            if (!isPreviewMode) await window.saveToSummaryInternal(); 
+            window.print();
+            if (!isPreviewMode) {
+                await saveProjectAction(true); 
+                inputData = []; window.calculate(); window.clearAddForm();
+            }
+        };
+
+        window.printHistoryProtocol = function() {
+            document.body.classList.add('print-history'); window.print(); document.body.classList.remove('print-history');
+        };
+
+        // --- STREAMING_CHUNK:History Loading and Previews ---
+        window.loadHistoryItem = async function(id) {
+            const entry = printHistory.find(e => e.id.toString() === id.toString());
+            if (!entry || !entry.items) { await customAlert("Brak szczegółów dla tej kalkulacji."); return; }
+            
+            if (!isPreviewMode && !window.editingProtocolId && inputData.length > 0) window.tempInputData = JSON.parse(JSON.stringify(inputData));
+            else if (!isPreviewMode && inputData.length === 0) window.tempInputData = null;
+
+            cancelEditMode();
+            inputData = JSON.parse(JSON.stringify(entry.items));
+            let projName = entry.projectName;
+            
+            if(inputData.length > 0 && inputData[0].Jednostka) document.getElementById('formJednostka').value = projName;
+            else document.getElementById('formJednostka').value = projName;
+
+            document.getElementById('protocolDateInput').value = parsePlDateToISO(entry.date);
+            isPreviewMode = true; currentPreviewProtocolNumber = entry.protocolNumber || "-";
+            
+            document.getElementById('addFormContainer').classList.add('hidden'); document.getElementById('previewBanner').classList.remove('hidden'); document.getElementById('previewBanner').classList.add('flex');
+            document.getElementById('tableActionsContainer').classList.add('hidden');
+            window.switchTab('calc'); window.calculate(); updatePrintAuthor(entry.author || "");
+        };
+
+        window.editHistoryItem = async function(id) {
+            const entry = printHistory.find(e => e.id.toString() === id.toString());
+            if (!entry || !entry.items) { await customAlert("Brak szczegółów dla tej kalkulacji."); return; }
+            if (inputData.length > 0) { if (!(await customConfirm("Otwarcie kalkulacji do EDYCJI zastąpi obecną, niezapisaną listę w Kalkulatorze. Kontynuować?"))) return; }
+            
+            window.tempInputData = null; 
+            cancelEditMode(); inputData = JSON.parse(JSON.stringify(entry.items));
+            let projName = entry.projectName;
+            
+            const sel = document.getElementById('formJednostka');
+            if(sel) {
+                if (!projectsList.includes(projName)) { projectsList.push(projName); window.renderProjectsList(); }
+                sel.value = projName;
+            }
+
+            document.getElementById('protocolDateInput').value = parsePlDateToISO(entry.date);
+            isPreviewMode = false; currentPreviewProtocolNumber = entry.protocolNumber || "-"; window.editingProtocolId = id; 
+            
+            document.getElementById('addFormContainer').classList.remove('hidden'); document.getElementById('previewBanner').classList.add('hidden'); document.getElementById('previewBanner').classList.remove('flex');
+            document.getElementById('tableActionsContainer').classList.remove('hidden');
+            
+            window.switchTab('calc'); window.calculate();
+        };
+
+        window.exitPreviewMode = function() {
+            cancelEditMode(); isPreviewMode = false; currentPreviewProtocolNumber = null;
+            if (window.tempInputData) { inputData = window.tempInputData; window.tempInputData = null; } else { inputData = []; }
+            document.getElementById('protocolDateInput').valueAsDate = new Date(); clearAddForm(); calculate(); 
+            
+            document.getElementById('addFormContainer').classList.remove('hidden'); document.getElementById('previewBanner').classList.add('hidden'); document.getElementById('previewBanner').classList.remove('flex');
+            document.getElementById('tableActionsContainer').classList.remove('hidden'); 
+            if (currentUser) updatePrintAuthor(currentUser.name || currentUser.login);
+            
+            window.switchTab('history'); 
+        };
+
+        window.toggleSelectAllHistory = function() {
+            const isChecked = document.getElementById('selectAllHistory').checked;
+            document.querySelectorAll('.history-checkbox').forEach(cb => cb.checked = isChecked);
+        };
+
+        window.deleteSelectedHistoryItemsWithPin = async function() {
+            if (!currentUser || currentUser.role !== 'admin') { await customAlert("Funkcja usuwania jest dostępna tylko dla administratora."); return; }
+            const selectedCheckboxes = document.querySelectorAll('.history-checkbox:checked');
+            if (selectedCheckboxes.length === 0) { await customAlert("Wybierz przynajmniej jedną kalkulację do usunięcia."); return; }
+
+            const pin = await customPrompt(`Podaj kod autoryzacji (PIN), aby usunąć ${selectedCheckboxes.length} zaznaczone kalkulacje:`, 'password');
+            if (pin === "4321") {
+                if(await customConfirm(`Czy na pewno chcesz usunąć ${selectedCheckboxes.length} wybrane kalkulacje? Tej operacji nie można cofnąć.`)) {
+                    const idsToDelete = Array.from(selectedCheckboxes).map(cb => cb.value);
+                    printHistory = printHistory.filter(item => !idsToDelete.includes(item.id.toString()));
+                    window.renderHistoryTable(); if (document.getElementById('view-daily') && document.getElementById('view-daily').classList.contains('block')) window.renderDailyLedger();
+                    autoSaveToDisk(); await customAlert("Pomyślnie usunięto zaznaczone kalkulacje.");
+                }
+            } else if (pin !== null) await customAlert("Nieprawidłowy kod PIN.");
+        };
+
+        // --- STREAMING_CHUNK:History Table Logic ---
+        window.renderHistoryTable = function() {
+            const tbody = document.getElementById('historyTableBody');
+            let theadTr = document.querySelector('#view-history table thead tr');
+            if(!theadTr) {
+                const thead = document.querySelector('#view-history table thead');
+                if(thead) {
+                    theadTr = document.createElement('tr');
+                    thead.appendChild(theadTr);
+                }
+            }
+            if(!tbody || !theadTr) return;
+            const isAdmin = currentUser && currentUser.role === 'admin';
+            
+            const checkboxTh = isAdmin ? `<th id="colHistCheck" class="px-3 py-2 border-r border-black print-hide text-center w-8 align-middle"><input type="checkbox" id="selectAllHistory" onchange="toggleSelectAllHistory()" class="cursor-pointer w-4 h-4"></th>` : '';
+            const paintColsTh = paintTypes.map(pt => `<th class="px-3 py-2 border-r border-black text-right truncate max-w-[80px]" title="${pt.name}">${pt.name}[L]</th>`).join('');
+
+            theadTr.innerHTML = `${checkboxTh}<th class="px-3 py-2 border-r border-black">Nr Kalkulacji</th><th class="px-3 py-2 border-r border-black">Data</th><th class="px-3 py-2 border-r border-black">Jednostka</th><th class="px-3 py-2 border-r border-black text-right">Pow.[m²]</th>${paintColsTh}<th class="px-3 py-2 border-r border-black text-right">Rozc.[l]</th><th class="px-3 py-2 border-r border-black text-right">Koszty[PLN]</th><th class="px-3 py-2 border-r border-black">Autor</th><th class="px-3 py-2 text-center print-hide">Akcja</th>`;
+
+            const btnDeleteSel = document.getElementById('btnDeleteSelectedHistory');
+            if (btnDeleteSel) btnDeleteSel.style.display = isAdmin ? 'inline-block' : 'none';
+            const selectAllCb = document.getElementById('selectAllHistory');
+            if (selectAllCb) selectAllCb.checked = false;
+            tbody.innerHTML = '';
+
+            if(printHistory.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="${isAdmin ? 8 + paintTypes.length : 7 + paintTypes.length}" class="px-3 py-2 text-center text-black font-bold uppercase border-b border-black">Brak zapisanych kalkulacji.</td></tr>`;
+                filteredHistory = []; return;
+            }
+
+            const fDateFromStr = document.getElementById('histFilterDateFrom').value;
+            const fDateToStr = document.getElementById('histFilterDateTo').value;
+            const fUnit = document.getElementById('histFilterUnit').value.trim().toLowerCase();
+            const fPaint = document.getElementById('histFilterPaint').value;
+            const dFrom = fDateFromStr ? new Date(fDateFromStr) : new Date('1970-01-01'); dFrom.setHours(0,0,0,0);
+            const dTo = fDateToStr ? new Date(fDateToStr) : new Date('2099-12-31'); dTo.setHours(23,59,59,999);
+
+            filteredHistory = printHistory.filter(row => {
+                const rowDate = parsePlDate(row.date);
+                if (rowDate < dFrom || rowDate > dTo) return false;
+                const searchStr = (row.projectName || "") + " " + (row.unit || "");
+                if (fUnit && (!searchStr.toLowerCase().includes(fUnit))) return false;
+                if (fPaint && fPaint !== 'Wszystkie') {
+                    if (!row.brandStats || !row.brandStats[fPaint] || row.brandStats[fPaint].vol <= 0) return false;
+                }
+                return true;
+            });
+
+            const historyToDisplay = [...filteredHistory].reverse();
+            if(historyToDisplay.length === 0) { tbody.innerHTML = `<tr><td colspan="${isAdmin ? 8 + paintTypes.length : 7 + paintTypes.length}" class="px-3 py-2 text-center text-black font-bold uppercase border-b border-black">Brak wyników.</td></tr>`; return; }
+
+            let sumArea = 0, sumCost = 0, sumAreaBlachy = 0, sumAreaProfile = 0;
+            let sumBrands = {}; paintTypes.forEach(pt => sumBrands[pt.id] = { vol: 0, thinner: 0, colors: {} });
+
+            historyToDisplay.forEach(row => {
+                let bs = row.brandStats || {};
+                if (!row.isError) {
+                    sumArea += row.area || 0; sumCost += row.cost || 0; sumAreaBlachy += row.areaBlachy || 0; sumAreaProfile += row.areaProfile || 0;
+                    Object.keys(bs).forEach(brand => {
+                        if(!sumBrands[brand]) sumBrands[brand] = { vol: 0, thinner: 0, colors: {} };
+                        sumBrands[brand].vol += bs[brand].vol || 0; sumBrands[brand].thinner += bs[brand].thinner || 0;
+                        for (let c in bs[brand].colors) sumBrands[brand].colors[c] = (sumBrands[brand].colors[c] || 0) + bs[brand].colors[c];
+                    });
+                }
+
+                const tr = document.createElement('tr');
+                tr.className = row.isError ? "bg-gray-200 text-gray-500 line-through" : "hover:bg-gray-100 transition-colors";
+                const checkboxCell = isAdmin ? `<td class="px-2 py-1.5 border-r border-b border-black text-center print-hide w-8 align-middle"><input type="checkbox" class="history-checkbox cursor-pointer w-4 h-4" value="${row.id}"></td>` : '';
+                let paintColsHtml = paintTypes.map(pt => `<td class="px-3 py-1.5 border-r border-b border-black text-right font-bold">${formatNumber(bs[pt.id] ? bs[pt.id].vol : 0, 2)}</td>`).join('');
+                let thTotal = 0; paintTypes.forEach(pt => { if(bs[pt.id]) thTotal += bs[pt.id].thinner || 0; });
+                if (row.thinnerVol && thTotal === 0) thTotal = row.thinnerVol; 
+
+                let actionsHtml = `<div class="flex flex-col gap-1 items-stretch w-16 mx-auto"><button onclick="loadHistoryItem('${row.id}')" class="text-black font-bold border border-black px-1 py-0.5 text-[10px] uppercase hover:bg-black hover:text-white bg-white leading-none">PODGLĄD</button><button onclick="editHistoryItem('${row.id}')" class="text-white bg-blue-600 font-bold border border-black px-1 py-0.5 text-[10px] uppercase hover:bg-blue-800 leading-none">EDYTUJ</button></div>`;
+
+                tr.innerHTML = `${checkboxCell}<td class="px-3 py-1.5 border-r border-b border-black font-bold">${row.protocolNumber || '-'}</td><td class="px-3 py-1.5 border-r border-b border-black font-bold">${row.date}</td><td class="px-3 py-1.5 border-r border-b border-black font-bold uppercase">${row.projectName || '-'}</td><td class="px-3 py-1.5 border-r border-b border-black text-right"><div class="font-bold">${formatNumber(row.area, 2)}</div><div class="text-[9px] text-gray-600 uppercase mt-0.5 whitespace-nowrap">B: ${formatNumber(row.areaBlachy, 2)} | P: ${formatNumber(row.areaProfile, 2)}</div></td>${paintColsHtml}<td class="px-3 py-1.5 border-r border-b border-black text-right font-bold">${formatNumber(thTotal, 2)}</td><td class="px-3 py-1.5 border-r border-b border-black text-right font-bold">${formatNumber(row.cost, 2)}</td><td class="px-3 py-1.5 border-r border-b border-black text-[10px] whitespace-nowrap">${row.author || '-'}</td><td class="px-2 py-1.5 border-b border-black text-center print-hide no-underline align-middle">${actionsHtml}</td>`;
+                tbody.appendChild(tr);
+            });
+
+            const sumTr = document.createElement('tr'); sumTr.className = "bg-gray-100 font-bold border-t-2 border-black";
+            const genBrandFooter = (ptName, bData) => {
+                if (!bData || (bData.vol <= 0 && bData.thinner <= 0)) return '';
+                const getHex = (cName) => { const rule = shopPrimerRules.find(r => r.colorName.toUpperCase() === cName.trim().toUpperCase()); return rule ? rule.colorHex : 'transparent'; };
+                let cHtml = Object.entries(bData.colors).map(([c, v]) => `<div class="flex items-center gap-1 mt-0.5"><span class="w-2.5 h-2.5 inline-block border border-black" style="background-color: ${getHex(c)}"></span><span>${c}: ${formatNumber(v)} L</span></div>`).join('');
+                if(!cHtml) cHtml = "-";
+                return `<div class="border border-black p-1 bg-white flex-1 min-w-[100px] text-[9px] mb-1"><div class="font-bold border-b border-black mb-0.5 truncate" title="${ptName}">${ptName}</div><div class="flex justify-between gap-1"><div><span class="underline text-[8px]">KOLORY:</span><br>${cHtml}</div><div class="text-right"><span class="underline text-[8px]">SUMA:</span><br>Farba: ${formatNumber(bData.vol)} L<br>Rozc: ${formatNumber(bData.thinner)} L</div></div></div>`;
+            };
+
+            let brandsHtml = paintTypes.map(pt => genBrandFooter(pt.name, sumBrands[pt.id])).join('');
+            sumTr.innerHTML = `<td colspan="${isAdmin ? 4 : 3}" class="px-3 py-2 border-r border-black text-right text-black uppercase align-middle">PODSUMOWANIE WIDOCZNYCH:</td><td class="px-3 py-2 border-r border-black text-right text-black text-[10px] align-top">Blachy: ${formatNumber(sumAreaBlachy, 2)}<br>Profile: ${formatNumber(sumAreaProfile, 2)}<br><span class="font-bold text-xs mt-1 block border-t border-gray-300 pt-1">Suma: ${formatNumber(sumArea, 2)}</span></td><td colspan="${paintTypes.length + 1}" class="px-3 py-2 border-r border-black text-right text-black align-top"><div class="flex flex-wrap gap-1 text-left">${brandsHtml || 'Brak farb'}</div></td><td class="px-3 py-2 border-r border-black text-right text-black align-bottom">${formatNumber(sumCost, 2)}</td><td class="px-3 py-2 border-r border-black"></td><td class="px-3 py-2 border-black print-hide"></td>`;
+            tbody.appendChild(sumTr);
+        };
+
+        window.exportHistoryToExcel = async function() {
+            if (!filteredHistory || filteredHistory.length === 0) { await customAlert("Brak danych do wyeksportowania! (Tabela historii jest pusta)"); return; }
+            const exportData = filteredHistory.map(row => {
+                let bs = row.brandStats || {};
+                let rowExport = { "Nr Kalkulacji": row.protocolNumber || "-", "Data": row.date, "Projekt": row.projectName || "-", "Powierzchnia [m2]": row.area };
+                let thTotal = 0;
+                paintTypes.forEach(pt => { let vol = bs[pt.id] ? (bs[pt.id].vol || 0) : 0; rowExport[`${pt.name} [L]`] = vol; if(bs[pt.id]) thTotal += bs[pt.id].thinner || 0; });
+                if (row.thinnerVol && thTotal === 0) thTotal = row.thinnerVol; 
+                rowExport["Rozcieńczalnik [L]"] = thTotal; rowExport["Koszty Całkowite [PLN]"] = row.cost; rowExport["Status"] = row.isError ? "BŁĘDNY" : "OK"; rowExport["Zatwierdził"] = row.author || "Brak";
+                return rowExport;
+            });
+
+            const ws = XLSX.utils.json_to_sheet(exportData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Zestawienie Kalkulacji");
+            const defaultFilename = "Zestawienie_Kalkulacji.xlsx";
+            try {
+                if (window.showSaveFilePicker) {
+                    const handle = await window.showSaveFilePicker({ suggestedName: defaultFilename, types: [{ description: 'Plik Arkusza Excel', accept: {'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx']} }] });
+                    const writable = await handle.createWritable();
+                    const buffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+                    await writable.write(buffer); await writable.close();
+                } else { XLSX.writeFile(wb, defaultFilename); }
+            } catch (err) {}
+        };
+
+        // --- STREAMING_CHUNK:Indusco (Inventory) Tables ---
+        // --- ZARZĄDZANIE INDUSCO (WYDANIA) ---
+        window.renderInduscoTable = function() {
+            const tbody = document.getElementById('induscoTableBody');
+            if (!tbody) return; tbody.innerHTML = '';
+            const isAdmin = currentUser && currentUser.role === 'admin';
+            const colAction = document.getElementById('colInduscoAction');
+            if (colAction) colAction.style.display = 'table-cell'; 
+
+            const fDateFromStr = document.getElementById('induscoFilterDateFrom') ? document.getElementById('induscoFilterDateFrom').value : '';
+            const fDateToStr = document.getElementById('induscoFilterDateTo') ? document.getElementById('induscoFilterDateTo').value : '';
+            const fPaint = document.getElementById('induscoFilterPaint') ? document.getElementById('induscoFilterPaint').value : '';
+            const dFrom = fDateFromStr ? new Date(fDateFromStr) : new Date('1970-01-01'); dFrom.setHours(0,0,0,0);
+            const dTo = fDateToStr ? new Date(fDateToStr) : new Date('2099-12-31'); dTo.setHours(23,59,59,999);
+
+            const filteredData = induscoHistory.map((row, idx) => ({...row, originalIndex: idx})).filter(row => {
+                const rowDate = parsePlDate(row.date);
+                if (rowDate < dFrom || rowDate > dTo) return false;
+                if (fPaint && !row.paintType.toUpperCase().includes(fPaint.toUpperCase())) return false;
+                return true;
+            });
+
+            if (filteredData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="px-3 py-2 text-center text-black font-bold uppercase border-b border-black">Brak zapisanych zdarzeń w wybranym okresie.</td></tr>`;
+            } else {
+                [...filteredData].reverse().forEach((row) => {
+                    const i = row.originalIndex;
+                    let typeDisplay = row.paintType; 
+                    let amountDisplay = formatNumber(row.amount, 2); 
+                    let trClass = "hover:bg-gray-100 transition-colors";
+                    
+                    let akcjaDisplay = "WYDANIE";
+                    let akcjaColor = "text-green-700";
+                    
+                    if (row.actionType === 'utylizacja' || (row.amount < 0 && !row.isRemanent && row.actionType !== 'remanent')) {
+                        akcjaDisplay = "UTYLIZACJA";
+                        akcjaColor = "text-red-600";
+                    }
+                    
+                    if (row.isRemanent || row.actionType === 'remanent') {
+                        typeDisplay += ` <span class="text-[9px] bg-yellow-300 text-black px-1 border border-black ml-2 font-bold uppercase">REMANENT</span>`;
+                        if (row.amount > 0) amountDisplay = "+" + amountDisplay; 
+                        akcjaDisplay = "REMANENT"; 
+                        akcjaColor = "text-yellow-700"; 
+                        trClass = "bg-yellow-50 hover:bg-yellow-100 transition-colors";
+                    }
+
+                    tbody.innerHTML += `
+                        <tr class="${trClass}">
+                            <td class="px-3 py-2 border-r border-black font-bold text-black">${row.date}</td>
+                            <td class="px-3 py-2 border-r border-black text-black uppercase flex items-center">${typeDisplay}</td>
+                            <td class="px-3 py-2 border-r border-black text-right font-bold text-black">${amountDisplay}</td>
+                            <td class="px-3 py-2 border-r border-black font-bold ${akcjaColor} uppercase text-[10px]">${akcjaDisplay}</td>
+                            <td class="px-3 py-2 border-r border-black text-black text-xs whitespace-normal">${row.author}</td>
+                            <td class="px-3 py-2 text-center print-hide border-black">
+                                <div class="flex flex-col gap-1 items-center w-16 mx-auto"><button onclick="editInduscoRecord(${i})" class="w-full text-white bg-blue-600 font-bold uppercase text-[10px] border border-black px-1 py-0.5 hover:bg-blue-800 leading-none">Edytuj</button>${isAdmin ? `<button onclick="removeInduscoRecord(${i})" class="w-full text-black font-bold uppercase text-[10px] border border-black px-1 py-0.5 hover:bg-black hover:text-white bg-white leading-none">Usuń</button>` : ''}</div>
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
+        };
+
+        window.editInduscoRecord = function(index) {
+            window.currentEditInduscoIndex = index; const record = induscoHistory[index];
+            document.getElementById('editInduscoDate').value = parsePlDateToISO(record.date);
+            let baseType = record.paintType.replace(/<[^>]*>?/gm, '').trim().replace("REMANENT", "").trim();
+            document.getElementById('editInduscoPaint').value = baseType;
+            let isUtylizacja = record.actionType === 'utylizacja' || (record.amount < 0 && !record.isRemanent && record.actionType !== 'remanent');
+            let isRemanent = record.isRemanent || record.actionType === 'remanent';
+            const actionEl = document.getElementById('editInduscoAction');
+            if(actionEl) {
+                if (isRemanent) actionEl.value = 'remanent';
+                else if (isUtylizacja) actionEl.value = 'utylizacja';
+                else actionEl.value = 'wydanie';
+            }
+            document.getElementById('editInduscoAmount').value = isRemanent ? record.amount : Math.abs(record.amount); 
+            document.getElementById('editInduscoModal').classList.remove('hidden'); document.getElementById('editInduscoModal').classList.add('flex');
+        };
+
+        window.closeEditInduscoModal = function() { document.getElementById('editInduscoModal').classList.add('hidden'); document.getElementById('editInduscoModal').classList.remove('flex'); };
+
+        window.saveEditIndusco = async function() {
+            const index = window.currentEditInduscoIndex;
+            const dIso = document.getElementById('editInduscoDate').value, type = document.getElementById('editInduscoPaint').value, actionEl = document.getElementById('editInduscoAction');
+            const actionType = actionEl ? actionEl.value : 'wydanie'; const amtStr = document.getElementById('editInduscoAmount').value; const amt = parseFloat(amtStr);
+            if (!dIso || !type || isNaN(amt) || amtStr.trim() === '') { await customAlert("Wypełnij poprawnie wszystkie pola wydania!"); return; }
+
+            const isRem = induscoHistory[index].isRemanent || actionType === 'remanent'; 
+            let finalAmt = amt;
+            
+            if (actionType === 'remanent') { 
+                finalAmt = amt; 
+                induscoHistory[index].isRemanent = true;
+            } else if (actionType === 'utylizacja') { 
+                finalAmt = -Math.abs(amt); 
+                induscoHistory[index].isRemanent = false;
+            } else { 
+                finalAmt = Math.abs(amt); 
+                induscoHistory[index].isRemanent = false;
+            }
+
+            const currUserStr = currentUser ? (currentUser.name || currentUser.login) : "System";
+            const editDateStr = new Date().toLocaleString('pl-PL', {day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit'});
+            const editInfo = `<br><span class="text-[9px] text-gray-500 font-normal">[Edycja: ${currUserStr} ${editDateStr}]</span>`;
+
+            induscoHistory[index].date = formatISOToPL(dIso); induscoHistory[index].paintType = type;
+            if (!isRem) induscoHistory[index].actionType = actionType;
+            induscoHistory[index].amount = finalAmt; induscoHistory[index].author = induscoHistory[index].author + editInfo;
+
+            renderInduscoTable(); if (document.getElementById('view-daily') && document.getElementById('view-daily').classList.contains('block')) renderDailyLedger();
+            autoSaveToDisk(); closeEditInduscoModal();
+        };
+
+        window.addInduscoBulkRow = function() {
+            const container = document.getElementById('induscoBulkRows'); const row = document.createElement('div');
+            row.className = "flex flex-wrap gap-2 items-end indusco-bulk-row";
+            row.innerHTML = `<div class="flex-1 min-w-[200px]"><label class="block text-[10px] font-bold text-black mb-0.5 uppercase">Towar</label><select class="indusco-paint-select w-full border border-black p-1.5 text-sm outline-none bg-white">${window.getInduscoPaintsHtml()}</select></div><div class="w-40"><label class="block text-[10px] font-bold text-black mb-0.5 uppercase">Akcja</label><select class="indusco-action-type w-full border border-black p-1.5 text-sm outline-none bg-white"><option value="wydanie">Wydanie</option><option value="utylizacja">Utylizacja</option><option value="remanent">Remanent</option></select></div><div class="w-32"><label class="block text-[10px] font-bold text-black mb-0.5 uppercase">Ilość [L]</label><input type="number" step="0.1" class="indusco-amount-input w-full border border-black p-1.5 text-sm outline-none"></div><button onclick="this.parentElement.remove()" class="bg-white text-black border border-black hover:bg-red-600 hover:text-white font-bold px-3 py-1.5 text-sm uppercase transition" title="Usuń ten wiersz">X</button>`;
+            container.appendChild(row);
+        };
+
+        window.saveBulkIndusco = async function() {
+            const dateVal = document.getElementById('induscoDate').value;
+            if (!dateVal) { await customAlert("Wybierz datę przed zatwierdzeniem!"); return; }
+            const rows = document.querySelectorAll('.indusco-bulk-row');
+            if (rows.length === 0) { await customAlert("Dodaj przynajmniej jedną pozycję za pomocą przycisku '+ Dodaj kolejną pozycję'."); return; }
+            const dateStr = new Date(dateVal).toLocaleDateString('pl-PL'); let addedCount = 0;
+
+            rows.forEach(row => {
+                const paintSelect = row.querySelector('.indusco-paint-select'), actionSelect = row.querySelector('.indusco-action-type'), amountInput = row.querySelector('.indusco-amount-input');
+                if (paintSelect && amountInput && actionSelect) {
+                    const paintType = paintSelect.value, actionType = actionSelect.value, amount = parseFloat(amountInput.value);
+                    if (paintType && !isNaN(amount)) {
+                        let finalAmount = amount;
+                        let isRem = false;
+                        if (actionType === 'utylizacja') { finalAmount = -Math.abs(amount); }
+                        else if (actionType === 'wydanie') { finalAmount = Math.abs(amount); }
+                        else if (actionType === 'remanent') { isRem = true; }
+                        
+                        induscoHistory.push({ paintType, amount: finalAmount, actionType, isRemanent: isRem, date: dateStr, author: currentUser ? (currentUser.name || currentUser.login) : "Nieznany" });
+                        addedCount++;
+                    }
+                }
+            });
+
+            if (addedCount > 0) {
+                renderInduscoTable(); if (document.getElementById('view-daily') && document.getElementById('view-daily').classList.contains('block')) renderDailyLedger();
+                autoSaveToDisk(); await customAlert(`Pomyślnie zapisano ${addedCount} pozycji.`);
+                document.getElementById('induscoBulkRows').innerHTML = ''; window.addInduscoBulkRow(); 
+            } else await customAlert("Brak poprawnych ilości w dodanych wierszach.");
+        };
+
+        window.removeInduscoRecord = async function(index) {
+            if (!currentUser || currentUser.role !== 'admin') { await customAlert("Usuwanie jest dozwolone tylko dla administratora."); return; }
+            const pin = await customPrompt("Podaj kod autoryzacji (PIN), aby usunąć wpis z historii:", 'password');
+            if (pin === "4321") { induscoHistory.splice(index, 1); renderInduscoTable(); if (document.getElementById('view-daily') && document.getElementById('view-daily').classList.contains('block')) renderDailyLedger(); autoSaveToDisk(); }
+            else if (pin !== null) await customAlert("Nieprawidłowy kod PIN.");
+        };
+
+        // --- STREAMING_CHUNK:Database List Management ---
+        window.filterDbTable = function() { window.renderDbTable(); };
+
+        window.updateDbMultiplier = async function(cat, key, value) {
+            const cleanValue = value.replace(/[\s\u00A0]/g, '').replace(',', '.');
+            const num = parseFloat(cleanValue);
+            if (!isNaN(num) && num > 0) {
+                database[cat][key] = num;
+                window.updateProfilSelect(); window.calculate();
+            } else {
+                await customAlert("Podana wartość musi być liczbą większą od zera.");
+                window.renderDbTable();
+            }
+        };
+
+        window.renderDbTable = function() {
+            const previewSection = document.getElementById('dbPreviewSection');
+            const tbody = document.getElementById('dbTableBody');
+            const countBadge = document.getElementById('dbCountBadge');
+            const searchInput = document.getElementById('dbSearchInput');
+            const query = searchInput ? searchInput.value.toLowerCase() : "";
+            
+            tbody.innerHTML = '';
+            let totalCount = 0; let totalInDb = 0;
+            
+            for (const cat in database) {
+                if (cat === 'Płaskowniki FB') continue; 
+                const keys = Object.keys(database[cat]).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+                totalInDb += keys.length;
+                if (keys.length === 0) continue;
+                
+                const filteredKeys = keys.filter(k => k.toLowerCase().includes(query));
+                if (filteredKeys.length === 0) continue;
+                
+                const headerTr = document.createElement('tr');
+                headerTr.innerHTML = `<td colspan="2" class="font-bold uppercase tracking-wider text-[11px] bg-gray-100 text-black px-3 py-2 border-b border-black">${cat}</td>`;
+                tbody.appendChild(headerTr);
+                
+                filteredKeys.forEach(key => {
+                    totalCount++;
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-gray-100 transition-colors";
+                    tr.innerHTML = `
+                        <td class="pl-6 font-bold text-black px-3 py-1.5 border-b border-gray-300">${key}</td>
+                        <td class="text-right px-3 py-1.5 border-b border-gray-300">
+                            <input type="text" value="${window.formatNumber(database[cat][key], 4)}" 
+                                onchange="updateDbMultiplier('${cat}', '${key}', this.value)" class="w-24 text-right bg-transparent focus:bg-white border border-transparent hover:border-black focus:border-black outline-none text-black font-bold px-1 py-0.5 transition-all">
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+            countBadge.textContent = totalCount;
+            if (totalInDb > 0) { previewSection.classList.remove('hidden'); previewSection.classList.add('flex'); } 
+            else { previewSection.classList.add('hidden'); previewSection.classList.remove('flex'); }
+            window.updateProfilSelect();
+
+            const dlProfile = document.getElementById('dl-profile');
+            if (dlProfile) {
+                dlProfile.innerHTML = '';
+                for (const cat in database) {
+                    if (cat === 'Płaskowniki FB') continue; 
+                    Object.keys(database[cat]).forEach(k => {
+                        const opt = document.createElement('option');
+                        opt.value = k;
+                        dlProfile.appendChild(opt);
+                    });
+                }
+            }
+        };
+
+        // --- STREAMING_CHUNK:Daily Ledger Rendering ---
+        // --- ROZLICZENIE DZIENNE ---
+        let currentDailyPaint = null;
+        
+        window.getAllPossibleDailyPaints = function() {
+            let paints = []; 
+            paintTypes.forEach(pt => { 
+                paints.push(`${pt.name} - Szary`); 
+                paints.push(`${pt.name} - Czerwony`); 
+                paints.push(`${pt.name} - Zielony`); 
+                paints.push(`${pt.name} - Rozcieńczalnik`); 
+            }); 
+            return paints;
+        };
+
+        window.initDailyPaints = function() {
+            const allPaints = window.getAllPossibleDailyPaints();
+            if (visibleDailyPaints === null) return allPaints;
+            return allPaints.filter(p => visibleDailyPaints.includes(p));
+        };
+
+        window.openConfigDailyPaints = function() {
+            const allPaints = window.getAllPossibleDailyPaints();
+            const listEl = document.getElementById('configDailyPaintsList');
+            listEl.innerHTML = '';
+            
+            allPaints.forEach(paint => {
+                const isChecked = visibleDailyPaints === null || visibleDailyPaints.includes(paint);
+                listEl.innerHTML += `
+                    <label class="flex items-center gap-2 cursor-pointer p-1.5 hover:bg-gray-100 border border-transparent hover:border-gray-300">
+                        <input type="checkbox" class="daily-paint-checkbox w-4 h-4 cursor-pointer" value="${paint}" ${isChecked ? 'checked' : ''}>
+                        <span class="text-xs font-bold uppercase">${paint}</span>
+                    </label>
+                `;
+            });
+            document.getElementById('configDailyPaintsModal').classList.remove('hidden');
+            document.getElementById('configDailyPaintsModal').classList.add('flex');
+        };
+
+        window.saveDailyPaintsConfig = function() {
+            const checkboxes = document.querySelectorAll('.daily-paint-checkbox');
+            visibleDailyPaints = Array.from(checkboxes).filter(cb => cb.checked).map(cb => cb.value);
+            document.getElementById('configDailyPaintsModal').classList.add('hidden');
+            document.getElementById('configDailyPaintsModal').classList.remove('flex');
+            
+            const paints = window.initDailyPaints();
+            if (paints.length > 0 && !paints.includes(currentDailyPaint)) {
+                currentDailyPaint = paints[0];
+            } else if (paints.length === 0) {
+                currentDailyPaint = null;
+            }
+            
+            window.renderDailySidebar();
+            window.renderDailyLedger();
+            window.autoSaveToDisk();
+        };
+
+        window.renderDailySidebar = function() {
+            const sidebar = document.getElementById('dailyPaintSidebar'); if (!sidebar) return;
+            const paints = window.initDailyPaints(); 
+            if (!currentDailyPaint || !paints.includes(currentDailyPaint)) currentDailyPaint = paints.length > 0 ? paints[0] : null;
+            sidebar.innerHTML = '';
+            paints.forEach(paint => {
+                const isSelected = currentDailyPaint === paint; const btn = document.createElement('button');
+                btn.className = `w-full text-left px-4 py-3 border-b border-gray-300 font-bold text-xs uppercase transition-colors ${isSelected ? 'bg-blue-600 text-white border-blue-700' : 'bg-white text-black hover:bg-gray-100'}`;
+                btn.textContent = paint; btn.onclick = () => window.selectDailyPaint(paint); sidebar.appendChild(btn);
+            });
+            const title = document.getElementById('dailySelectedPaintTitle'); if (title) title.textContent = currentDailyPaint || "BRAK FARB";
+        };
+
+        window.selectDailyPaint = function(paint) { 
+            currentDailyPaint = paint; 
+            window.renderDailySidebar(); 
+            window.renderDailyLedger(); 
+            setTimeout(() => {
+                const tableContainer = document.querySelector('#view-daily .overflow-auto');
+                if (tableContainer) tableContainer.scrollTop = tableContainer.scrollHeight;
+            }, 50);
+        };
+        
+        window.toggleDailySidebar = function() { const sidebar = document.getElementById('dailyPaintSidebarWrapper'); sidebar.classList.toggle('hidden'); sidebar.classList.toggle('flex'); };
+        window.printDailyLedger = function() { document.body.classList.add('print-daily'); window.print(); document.body.classList.remove('print-daily'); };
+
+        window.renderDailyLedger = function() {
+            const tbody = document.getElementById('dailyTableBody'); const tfoot = document.getElementById('dailyTableFoot');
+            if (!tbody || !tfoot || !currentDailyPaint) return;
+            
+            let events = []; const parts = currentDailyPaint.split(' - '); if (parts.length < 2) return;
+            const qColor = parts.pop(); const qBrand = parts.join(' - ');
+
+            induscoHistory.forEach((r, idx) => {
+                if (r.paintType === currentDailyPaint) {
+                    let isUtylizacja = r.actionType === 'utylizacja' || (r.amount < 0 && !r.isRemanent && r.actionType !== 'remanent'); 
+                    let isKorekta = r.isRemanent || r.actionType === 'remanent';
+                    events.push({ 
+                        dateObj: window.parsePlDate(r.date), 
+                        jednostka: '-', 
+                        wydanie: (r.amount > 0 && !isKorekta) ? r.amount : 0, 
+                        utylizacja: isUtylizacja ? Math.abs(r.amount) : 0, 
+                        zuzycie: 0, 
+                        m2: 0, 
+                        rodzaj: isKorekta ? 'REMANENT' : (isUtylizacja ? 'UTYLIZACJA' : 'WYDANIE'), 
+                        kalkulacja: '-', 
+                        akcje: `<button onclick="editInduscoRecord(${idx})" class="text-[10px] font-bold border border-black px-2 py-1 bg-white hover:bg-gray-200 uppercase print-hide">EDYTUJ ZDARZ.</button>`, 
+                        _rawId: 'ind_' + idx, 
+                        rawAmount: r.amount 
+                    });
+                }
+            });
+
+            printHistory.forEach(p => {
+                if (p.isError) return;
+                let pVol = 0; let bs = p.brandStats;
+                if (bs && bs[qBrand]) { if (qColor === 'Rozcieńczalnik') pVol = bs[qBrand].thinner || 0; else if (bs[qBrand].colors && bs[qBrand].colors[qColor]) pVol = bs[qBrand].colors[qColor]; }
+                
+                let rodzajMat = []; if (p.areaBlachy > 0) rodzajMat.push("BLACHY"); if (p.areaProfile > 0) rodzajMat.push("PROFILE");
+                let rodzajDisplay = "ZUŻYCIE"; if (rodzajMat.length > 0) rodzajDisplay = "ZUŻYCIE: " + rodzajMat.join(" + ");
+
+                if (pVol > 0) events.push({ dateObj: window.parsePlDate(p.date), jednostka: p.projectName || p.unit || '-', wydanie: 0, utylizacja: 0, zuzycie: pVol, m2: p.area || 0, rodzaj: rodzajDisplay, kalkulacja: p.protocolNumber || '-', akcje: `<button onclick="loadHistoryItem('${p.id}')" class="text-[10px] font-bold bg-[#6466f1] text-white border border-black px-2 py-1 uppercase hover:bg-blue-800 print-hide">PODGLĄD</button>`, _rawId: 'pr_' + p.id });
+            });
+
+            events.sort((a, b) => a.dateObj - b.dateObj);
+            let currentBalance = 0;
+            events.forEach(ev => {
+                if (ev.rodzaj === 'REMANENT') currentBalance += ev.rawAmount; else { currentBalance += ev.wydanie; currentBalance -= ev.utylizacja; currentBalance -= ev.zuzycie; }
+                ev.pozostalo = currentBalance;
+            });
+
+            let filteredEvents = events; const filterMonth = document.getElementById('dailyFilterMonth').value;
+            if (filterMonth) { const [fYear, fMonth] = filterMonth.split('-'); filteredEvents = events.filter(ev => ev.dateObj.getFullYear() === parseInt(fYear) && (ev.dateObj.getMonth() + 1) === parseInt(fMonth)); }
+
+            tbody.innerHTML = ''; let sumWydanie = 0, sumUtylizacja = 0, sumZuzycie = 0, sumM2 = 0;
+            if (filteredEvents.length === 0) { tbody.innerHTML = `<tr><td colspan="10" class="p-6 font-bold uppercase text-gray-500 text-center">Brak zapisanych działań dla wybranej farby.</td></tr>`; tfoot.innerHTML = ''; return; }
+
+            filteredEvents.forEach(ev => {
+                sumWydanie += ev.wydanie; sumUtylizacja += ev.utylizacja; sumZuzycie += ev.zuzycie; sumM2 += ev.m2;
+                let textColorDostawa = ev.rodzaj === 'REMANENT' && ev.rawAmount > 0 ? "text-yellow-700" : "text-green-700"; let textColorUtyl = ev.rodzaj === 'REMANENT' && ev.rawAmount < 0 ? "text-yellow-700" : "text-red-600";
+                let valDostawa = (ev.rodzaj === 'REMANENT' && ev.rawAmount > 0) ? ev.rawAmount : ev.wydanie; let valUtyl = (ev.rodzaj === 'REMANENT' && ev.rawAmount < 0) ? Math.abs(ev.rawAmount) : ev.utylizacja;
+
+                tbody.innerHTML += `<tr class="hover:bg-gray-50"><td class="px-2 py-2 border-r border-b border-black font-bold text-black">${window.formatISOToPL(window.dateToISO(ev.dateObj))}</td><td class="px-2 py-2 border-r border-b border-black font-bold uppercase">${ev.jednostka}</td><td class="px-2 py-2 border-r border-b border-black ${textColorDostawa} font-bold">${valDostawa > 0 ? window.formatNumber(valDostawa) : ''}</td><td class="px-2 py-2 border-r border-b border-black ${textColorUtyl} font-bold">${valUtyl > 0 ? window.formatNumber(valUtyl) : ''}</td><td class="px-2 py-2 border-r border-b border-black font-bold">${ev.zuzycie > 0 ? window.formatNumber(ev.zuzycie) : ''}</td><td class="px-2 py-2 border-r border-b border-black font-bold bg-yellow-50 text-black text-sm">${window.formatNumber(ev.pozostalo)}</td><td class="px-2 py-2 border-r border-b border-black text-blue-700 font-bold">${ev.m2 > 0 ? window.formatNumber(ev.m2) : ''}</td><td class="px-2 py-2 border-r border-b border-black text-gray-700 font-bold uppercase text-[10px]">${ev.rodzaj}</td><td class="px-2 py-2 border-r border-b border-black text-gray-700 font-bold text-[10px] uppercase">${ev.kalkulacja}</td><td class="px-2 py-2 border-b border-black text-center print-hide">${ev.akcje}</td></tr>`;
+            });
+
+            tfoot.innerHTML = `<tr><td colspan="2" class="px-2 py-3 border-r border-black text-right uppercase text-black font-bold bg-gray-200">SUMA WIDOCZNYCH:</td><td class="px-2 py-3 border-r border-black text-green-700 font-bold text-sm bg-gray-200">${window.formatNumber(sumWydanie)}</td><td class="px-2 py-3 border-r border-black text-red-600 font-bold text-sm bg-gray-200">${window.formatNumber(sumUtylizacja)}</td><td class="px-2 py-3 border-r border-black font-bold text-sm bg-gray-200">${window.formatNumber(sumZuzycie)}</td><td class="px-2 py-3 border-r border-black font-bold bg-yellow-100 text-black text-sm">${window.formatNumber(filteredEvents[filteredEvents.length-1].pozostalo)}</td><td class="px-2 py-3 border-r border-black text-blue-700 font-bold text-sm bg-gray-200">${window.formatNumber(sumM2)}</td><td colspan="3" class="px-2 py-3 bg-gray-200 border-black print-hide"></td></tr>`;
+        };
+    </script>
+</body>
+</html>
