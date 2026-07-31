@@ -30,7 +30,7 @@
             @page { size: A4 landscape; margin: 10mm; }
             body { background-color: white !important; font-size: 10pt !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             
-            header, .print-hide, #tab-daily, #tab-calc, #tab-costs, #tab-db, #tab-colors, #tab-history, #tab-users, #tab-projects, #tab-indusco, #loginOverlay, #initialLoadOverlay, #editInduscoModal, #customDialogOverlay, #configDailyPaintsModal { display: none !important; }
+            header, .print-hide, #tab-daily, #tab-calc, #tab-costs, #tab-db, #tab-colors, #tab-history, #tab-users, #tab-projects, #tab-indusco, #loginOverlay, #initialLoadOverlay, #editInduscoModal, #customDialogOverlay, #configDailyPaintsModal, #paintRulesModal { display: none !important; }
             
             body.print-daily #view-calc, body.print-daily #view-costs, body.print-daily #view-history, body.print-daily #view-indusco, body.print-daily #view-db, body.print-daily #view-colors, body.print-daily #view-users, body.print-daily #view-projects { display: none !important; }
             body.print-daily #view-daily { display: block !important; border: none !important; margin-top: 0 !important; }
@@ -171,13 +171,25 @@
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-black mb-1 uppercase">Ilość [L]</label>
-                    <!-- Brak min="0" żeby można było wpisać wartości ujemne przy remanencie -->
                     <input type="number" id="editInduscoAmount" step="0.1" class="w-full border border-black p-1.5 text-sm outline-none bg-white">
                 </div>
             </div>
             <div class="flex justify-end gap-3 shrink-0">
                 <button onclick="closeEditInduscoModal()" class="bg-gray-200 text-black border border-black hover:bg-gray-300 font-bold py-2 px-4 uppercase text-sm transition">Anuluj</button>
                 <button onclick="saveEditIndusco()" class="bg-black text-white border border-black hover:bg-gray-800 font-bold py-2 px-4 uppercase text-sm transition shadow-md">Zapisz Zmiany</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL REGUŁ FARBY -->
+    <div id="paintRulesModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 z-[1050] hidden items-center justify-center print-hide">
+        <div class="bg-white border-2 border-black p-6 w-full max-w-sm shadow-2xl relative flex flex-col">
+            <h2 class="text-lg font-bold text-black uppercase border-b-2 border-black pb-2 mb-4">Reguły dla: <span id="paintRulesTitle" class="text-blue-600"></span></h2>
+            <div class="text-xs text-gray-700 mb-4">Zdefiniuj, czy dla danego koloru ta farba ma zostać automatycznie zamieniona na inną (np. z powodu braku w ofercie).</div>
+            <div id="paintRulesContainer" class="space-y-3 mb-6"></div>
+            <div class="flex justify-end gap-3 shrink-0">
+                <button onclick="closePaintRulesModal()" class="bg-gray-200 text-black border border-black hover:bg-gray-300 font-bold py-2 px-4 uppercase text-sm transition">Anuluj</button>
+                <button onclick="savePaintRules()" class="bg-black text-white border border-black hover:bg-gray-800 font-bold py-2 px-4 uppercase text-sm transition shadow-md">Zapisz</button>
             </div>
         </div>
     </div>
@@ -207,6 +219,7 @@
                 </h1>
             </div>
             <div class="flex flex-wrap gap-2 print-hide">
+                <!-- Usunięto zduplikowane przyciski Zapisz/Wczytaj -->
                 <button onclick="handleLogout()" class="bg-white border border-red-600 text-red-600 hover:bg-red-600 hover:text-white px-3 py-2 text-xs font-bold transition flex items-center gap-1.5 uppercase ml-2">
                     WYLOGUJ
                 </button>
@@ -294,7 +307,7 @@
                                     <th class="px-2 py-3 border-r border-black">JEDNOSTKA</th>
                                     <th class="px-2 py-3 border-r border-black text-green-700">WYDANIE [L]</th>
                                     <th class="px-2 py-3 border-r border-black text-red-600">UTYLIZACJA [L]</th>
-                                    <th class="px-2 py-3 border-r border-black">ZUŻYCIE [L]</th>
+                                    <th class="px-2 py-3 border-r border-black text-blue-700">ZUŻYCIE [L]</th>
                                     <th class="px-2 py-3 border-r border-black bg-yellow-100">POZOSTAŁO [L]</th>
                                     <th class="px-2 py-3 border-r border-black text-blue-700">ILOŚĆ M2</th>
                                     <th class="px-2 py-3 border-r border-black">RODZAJ MATERIAŁU</th>
@@ -850,6 +863,7 @@
         initAuth();
     </script>
 
+    <!-- GŁÓWNY SKRYPT APLIKACJI -->
     <script>
         const USE_FIREBASE = true;
 
@@ -873,8 +887,7 @@
         let visibleDailyPaints = null;
 
         let paintTypes = [
-            { id: 'INTERPLATE', name: 'INTERPLATE', yieldBlachy: 8.5, yieldProfile: 6.0, thinnerPct: 14 },
-            { id: 'SIGMAWELD', name: 'SIGMAWELD', yieldBlachy: 10.0, yieldProfile: 6.5, thinnerPct: 14 }
+            { id: 'SIGMAWELD', name: 'SIGMAWELD', yieldBlachy: 10.0, yieldProfile: 6.5, thinnerPct: 14, fallbacks: {} }
         ];
         let laborCosts = { blachy: 4.20, profile: 6.80 };
 
@@ -1234,12 +1247,20 @@
                 }
                 
                 if (projectData.paintTypes) {
-                    paintTypes = projectData.paintTypes.filter(p => p.id !== 'INNY');
+                    paintTypes = projectData.paintTypes;
+                    paintTypes = paintTypes.filter(p => p.id !== 'INNY');
+                    paintTypes.forEach(p => { if (!p.fallbacks) p.fallbacks = {}; }); // Inicjalizacja pustych reguł dla starych zapisów
+                    
+                    // Bezpieczna migracja starego zapisu Interplate -> Sigmaweld dla Zielonego
+                    let ip = paintTypes.find(p => p.id === 'INTERPLATE');
+                    if (ip && !ip.fallbacks['Zielony'] && paintTypes.find(p => p.id === 'SIGMAWELD')) {
+                        ip.fallbacks['Zielony'] = 'SIGMAWELD';
+                    }
                     laborCosts = projectData.laborCosts || { blachy: 4.20, profile: 6.80 };
                 } else if (projectData.paintParams) {
                     paintTypes = [
-                        { id: 'INTERPLATE', name: 'INTERPLATE', yieldBlachy: parseFloat(projectData.paintParams.yieldIntBlachy)||8.5, yieldProfile: parseFloat(projectData.paintParams.yieldIntProfile)||6.0, thinnerPct: parseFloat(projectData.paintParams.thinnerPctInt)||14 },
-                        { id: 'SIGMAWELD', name: 'SIGMAWELD', yieldBlachy: parseFloat(projectData.paintParams.yieldSigBlachy)||10.0, yieldProfile: parseFloat(projectData.paintParams.yieldSigProfile)||6.5, thinnerPct: parseFloat(projectData.paintParams.thinnerPctSig)||14 }
+                        { id: 'SIGMAWELD', name: 'SIGMAWELD', yieldBlachy: parseFloat(projectData.paintParams.yieldSigBlachy)||10.0, yieldProfile: parseFloat(projectData.paintParams.yieldSigProfile)||6.5, thinnerPct: parseFloat(projectData.paintParams.thinnerPctSig)||14, fallbacks: {} },
+                        { id: 'INTERPLATE', name: 'INTERPLATE', yieldBlachy: parseFloat(projectData.paintParams.yieldIntBlachy)||8.5, yieldProfile: parseFloat(projectData.paintParams.yieldIntProfile)||6.0, thinnerPct: parseFloat(projectData.paintParams.thinnerPctInt)||14, fallbacks: { 'Zielony': 'SIGMAWELD' } }
                     ];
                     laborCosts = { blachy: parseFloat(projectData.paintParams.costBlachy)||4.20, profile: parseFloat(projectData.paintParams.costProfile)||6.80 };
                 }
@@ -1495,8 +1516,11 @@
                         <td class="px-3 py-1.5 border-r border-black text-center">
                             <input type="number" step="1" min="0" value="${pt.thinnerPct}" oninput="updatePaintParam('${pt.id}', 'thinnerPct', this.value)" class="w-16 text-center border border-transparent hover:border-black focus:border-black outline-none bg-transparent focus:bg-white font-bold text-black px-1 py-0.5 transition-all">
                         </td>
-                        <td class="px-3 py-1.5 text-center">
-                            <button onclick="removePaintType('${pt.id}')" class="text-black font-bold uppercase text-[10px] border border-black px-2 py-0.5 hover:bg-black hover:text-white bg-white">Usuń</button>
+                        <td class="px-3 py-1.5 text-center border-black">
+                            <div class="flex flex-col gap-1 items-center w-16 mx-auto">
+                                <button onclick="openPaintRulesModal('${pt.id}')" class="w-full text-white bg-blue-600 font-bold uppercase text-[10px] border border-black px-1 py-0.5 hover:bg-blue-800 leading-none">Reguły</button>
+                                <button onclick="removePaintType('${pt.id}')" class="w-full text-black font-bold uppercase text-[10px] border border-black px-1 py-0.5 hover:bg-black hover:text-white bg-white leading-none">Usuń</button>
+                            </div>
                         </td>
                     </tr>
                 `;
@@ -1522,18 +1546,90 @@
             if(!name) { await customAlert('Podaj nazwę farby!'); return; }
             if(paintTypes.find(p => p.id === name)) { await customAlert('Farba już istnieje!'); return; }
             
-            paintTypes.push({ id: name, name: name, yieldBlachy: 10.0, yieldProfile: 6.5, thinnerPct: 14 });
+            paintTypes.push({ id: name, name: name, yieldBlachy: 10.0, yieldProfile: 6.5, thinnerPct: 14, fallbacks: {} });
             document.getElementById('newPaintName').value = '';
             
             renderPaintTypesTable(); updatePaintDropdowns(); renderDailySidebar(); renderHistoryTable(); autoSaveToDisk();
         };
 
         window.removePaintType = async function(id) {
-            if(['INTERPLATE', 'SIGMAWELD', 'INNY'].includes(id)) { await customAlert('Nie można usunąć podstawowych farb systemowych.'); return; }
+            if(id === 'SIGMAWELD') { await customAlert('Nie można usunąć głównej farby systemowej SIGMAWELD.'); return; }
             if(await customConfirm(`Czy na pewno usunąć farbę ${id}?`)) {
                 paintTypes = paintTypes.filter(p => p.id !== id);
+                
+                paintTypes.forEach(pt => {
+                    for (let color in pt.fallbacks) {
+                        if (pt.fallbacks[color] === id) delete pt.fallbacks[color];
+                    }
+                });
+                
                 renderPaintTypesTable(); updatePaintDropdowns(); renderDailySidebar(); renderHistoryTable(); calculateCosts(); autoSaveToDisk();
             }
+        };
+
+        // Modal Reguł Farb
+        window.currentEditingPaintRules = null;
+        
+        window.openPaintRulesModal = function(id) {
+            window.currentEditingPaintRules = id;
+            const pt = paintTypes.find(p => p.id === id);
+            if(!pt) return;
+            document.getElementById('paintRulesTitle').textContent = pt.name;
+            
+            const container = document.getElementById('paintRulesContainer');
+            container.innerHTML = '';
+            
+            const uniqueColors = [...new Set(shopPrimerRules.map(r => r.colorName))];
+            
+            uniqueColors.forEach(color => {
+                const currentFallback = pt.fallbacks ? pt.fallbacks[color] : '';
+                
+                let optionsHtml = `<option value="">-- domyślna (bez zastępstwa) --</option>`;
+                paintTypes.forEach(otherPt => {
+                    if (otherPt.id !== id) {
+                        optionsHtml += `<option value="${otherPt.id}" ${currentFallback === otherPt.id ? 'selected' : ''}>Zastąp: ${otherPt.name}</option>`;
+                    }
+                });
+                
+                container.innerHTML += `
+                    <div>
+                        <label class="block text-xs font-bold text-black mb-1 uppercase">Wymagany Kolor: ${color}</label>
+                        <select id="rule_color_${color}" class="rule-select w-full border border-black p-1.5 text-sm outline-none bg-white" data-color="${color}">
+                            ${optionsHtml}
+                        </select>
+                    </div>
+                `;
+            });
+            
+            document.getElementById('paintRulesModal').classList.remove('hidden');
+            document.getElementById('paintRulesModal').classList.add('flex');
+        };
+        
+        window.closePaintRulesModal = function() {
+            document.getElementById('paintRulesModal').classList.add('hidden');
+            document.getElementById('paintRulesModal').classList.remove('flex');
+        };
+        
+        window.savePaintRules = function() {
+            if (!window.currentEditingPaintRules) return;
+            const pt = paintTypes.find(p => p.id === window.currentEditingPaintRules);
+            if (!pt) return;
+            
+            if (!pt.fallbacks) pt.fallbacks = {};
+            
+            document.querySelectorAll('.rule-select').forEach(sel => {
+                const color = sel.getAttribute('data-color');
+                const fallbackId = sel.value;
+                if (fallbackId) {
+                    pt.fallbacks[color] = fallbackId;
+                } else {
+                    delete pt.fallbacks[color];
+                }
+            });
+            
+            window.closePaintRulesModal();
+            window.calculate(); 
+            window.autoSaveToDisk();
         };
 
         window.getInduscoPaintsHtml = function() {
@@ -1581,7 +1677,6 @@
             if (!isNaN(num) && num > 0) {
                 database[cat][key] = num;
                 window.updateProfilSelect(); window.calculate();
-                window.autoSaveToDisk();
             } else {
                 await customAlert("Podana wartość musi być liczbą większą od zera.");
                 window.renderDbTable();
@@ -1595,13 +1690,12 @@
             const searchInput = document.getElementById('dbSearchInput');
             const query = searchInput ? searchInput.value.toLowerCase() : "";
             
-            if(!tbody) return;
             tbody.innerHTML = '';
             let totalCount = 0; let totalInDb = 0;
             
             for (const cat in database) {
                 if (cat === 'Płaskowniki FB') continue; 
-                const keys = Object.keys(database[cat]).sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
+                const keys = Object.keys(database[cat]).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
                 totalInDb += keys.length;
                 if (keys.length === 0) continue;
                 
@@ -1626,11 +1720,9 @@
                     tbody.appendChild(tr);
                 });
             }
-            if(countBadge) countBadge.textContent = totalCount;
-            if(previewSection) {
-                if (totalInDb > 0) { previewSection.classList.remove('hidden'); previewSection.classList.add('flex'); } 
-                else { previewSection.classList.add('hidden'); previewSection.classList.remove('flex'); }
-            }
+            countBadge.textContent = totalCount;
+            if (totalInDb > 0) { previewSection.classList.remove('hidden'); previewSection.classList.add('flex'); } 
+            else { previewSection.classList.add('hidden'); previewSection.classList.remove('flex'); }
             window.updateProfilSelect();
 
             const dlProfile = document.getElementById('dl-profile');
@@ -1667,6 +1759,81 @@
             window.renderDbTable();
             window.autoSaveToDisk();
             await customAlert(`Zapisano profil: ${nazwa}`);
+        };
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            try {
+                document.getElementById('induscoDate').valueAsDate = new Date();
+                document.getElementById('protocolDateInput').valueAsDate = new Date(); 
+                initGatunkiSelect(); renderColorsTable(); renderDbTable(); renderPaintTypesTable();
+                updatePaintDropdowns(); renderHistoryTable(); renderUsersTable(); renderProjectsList();
+                renderInduscoTable(); addInduscoBulkRow(); toggleFormFields(); 
+            } catch (e) { console.error("Błąd inicjalizacji: ", e); }
+
+            if (!USE_FIREBASE) {
+                let autoLoaded = false;
+                try {
+                    const response = await fetch('./Status/status.json', { cache: "no-store" });
+                    if (response.ok) {
+                        const text = await response.text();
+                        if (text && text !== "null") { await applyProjectData(text, true); autoLoaded = true; }
+                    }
+                } catch (err) {}
+                if (!autoLoaded) {
+                    document.getElementById('mainAppContainer').classList.add('locked-ui');
+                    const initialOverlay = document.getElementById('initialLoadOverlay');
+                    if (initialOverlay) { initialOverlay.classList.remove('hidden'); initialOverlay.classList.add('flex'); }
+                }
+            } else { document.getElementById('mainAppContainer').classList.add('locked-ui'); }
+        });
+
+        window.cancelEditMode = function() {
+            window.editingProtocolId = null;
+            const saveBtn = document.getElementById('btnSaveToSummary');
+            if (saveBtn) {
+                saveBtn.innerHTML = 'Zapisz do Zestawienia';
+                if (inputData.length > 0 && !isPreviewMode) {
+                    saveBtn.className = "bg-green-600 text-white border border-black hover:bg-green-700 px-6 py-2 text-sm font-bold transition flex items-center gap-1.5 uppercase shadow-md";
+                } else {
+                    saveBtn.className = "bg-black text-white border border-black hover:bg-gray-800 px-6 py-2 text-sm font-bold transition flex items-center gap-1.5 uppercase shadow-md";
+                }
+            }
+        };
+
+        window.addEventListener('beforeprint', () => {
+            const dateStr = new Date().toLocaleDateString('pl-PL');
+            document.querySelectorAll('.print-history-only .print-date').forEach(el => el.textContent = dateStr);
+        });
+
+        window.updatePrintHeaders = function(newProtocolNum = null) {
+            let projName = document.getElementById('formJednostka') ? document.getElementById('formJednostka').value.trim() : "";
+            if (!projName && inputData.length > 0 && inputData[0].Jednostka) projName = inputData[0].Jednostka;
+            document.querySelectorAll('.print-project-name').forEach(el => el.textContent = projName || "-");
+
+            let protNumStr = "[ NR: SZKIC (NIEZAPISANY) ]";
+            if (newProtocolNum) {
+                protNumStr = `[ NR: ${newProtocolNum} ]`;
+            } else if (isPreviewMode && currentPreviewProtocolNumber) {
+                protNumStr = `[ NR: ${currentPreviewProtocolNumber} ]`;
+            }
+            
+            document.querySelectorAll('.print-protocol-number').forEach(el => {
+                el.textContent = protNumStr;
+                if(protNumStr.includes("SZKIC")) el.classList.add("text-gray-500", "italic");
+                else el.classList.remove("text-gray-500", "italic");
+            });
+        };
+
+        window.resetProtocolCounter = async function() {
+            if (!currentUser || currentUser.role !== 'admin') { await customAlert("Brak uprawnień administratora."); return; }
+            const pin = await customPrompt("Podaj kod autoryzacji (PIN), aby zresetować licznik numeracji kalkulacji (od 1):", 'password');
+            if (pin === "4321") {
+                if (await customConfirm("UWAGA! Numery kolejnych kalkulacji zaczną się ponownie od początku. Czy na pewno chcesz wyzerować licznik?")) {
+                    protocolCounter = 0; autoSaveToDisk();
+                    await customAlert("Licznik kalkulacji został wyzerowany. Kolejna będzie miała nr 1.");
+                    updatePrintHeaders();
+                }
+            } else if (pin !== null) await customAlert("Nieprawidłowy kod PIN.");
         };
 
         window.initGatunkiSelect = function() {
@@ -1850,7 +2017,15 @@
                 totalAreaSum += powierzchnia;
                 
                 const shopPrimerInfo = getShopprimerColor(gatunek, grubosc);
-                if (farba === 'INTERPLATE' && shopPrimerInfo.name === 'Zielony' && paintTypes.find(p=>p.id==='SIGMAWELD')) { farba = 'SIGMAWELD'; inputData[index].Farba = 'SIGMAWELD'; }
+                
+                const ptConfig = paintTypes.find(p => p.id === farba);
+                if (ptConfig && ptConfig.fallbacks && ptConfig.fallbacks[shopPrimerInfo.name]) {
+                    const fallbackTarget = paintTypes.find(p => p.id === ptConfig.fallbacks[shopPrimerInfo.name]);
+                    if (fallbackTarget) {
+                        farba = fallbackTarget.id;
+                        inputData[index].Farba = farba;
+                    }
+                }
 
                 resultsData.push({ originalIndex: index, jednostka: jednostka, farba: farba, lp: index + 1, typ: ostatecznyTyp, gatunek: gatunek, grubosc: grubosc > 0 ? grubosc : "-", nazwa: nazwa || "-", dlugosc: dlugosc || "-", szerokosc: szerokosc || "-", ilosc: ilosc, mnoznik: mnoznik, powierzchnia: powierzchnia, isManual: isManual, kolorInfo: shopPrimerInfo });
             });
@@ -1997,29 +2172,29 @@
                 if (item.powierzchnia <= 0) return;
                 const isBlacha = item.typ === 'Blacha';
                 const matType = isBlacha ? 'BLACHY' : 'PROFILE';
-                const unit = (item.jednostka || "Brak jednostki") + " - " + matType;
+                const unitKey = (item.jednostka || "Brak jednostki") + "___" + matType;
                 
-                if (!currentUnits[unit]) {
-                    currentUnits[unit] = { area: 0, cost: 0, areaBlachy: 0, areaProfile: 0, brandStats: {}, items: [], pureName: (item.jednostka || "Brak jednostki") };
-                    paintTypes.forEach(pt => currentUnits[unit].brandStats[pt.id] = { vol: 0, thinner: 0, colors: {}, pct: pt.thinnerPct });
+                if (!currentUnits[unitKey]) {
+                    currentUnits[unitKey] = { projectName: (item.jednostka || "Brak jednostki"), area: 0, cost: 0, areaBlachy: 0, areaProfile: 0, brandStats: {}, items: [] };
+                    paintTypes.forEach(pt => currentUnits[unitKey].brandStats[pt.id] = { vol: 0, thinner: 0, colors: {}, pct: pt.thinnerPct });
                 }
                 
-                currentUnits[unit].area += item.powierzchnia;
-                currentUnits[unit].items.push(inputData[item.originalIndex]);
+                currentUnits[unitKey].area += item.powierzchnia;
+                currentUnits[unitKey].items.push(inputData[item.originalIndex]);
                 const costRate = isBlacha ? laborCosts.blachy : laborCosts.profile;
-                currentUnits[unit].cost += item.powierzchnia * costRate;
-                currentUnits[unit].areaBlachy += isBlacha ? item.powierzchnia : 0;
-                currentUnits[unit].areaProfile += !isBlacha ? item.powierzchnia : 0;
+                currentUnits[unitKey].cost += item.powierzchnia * costRate;
+                currentUnits[unitKey].areaBlachy += isBlacha ? item.powierzchnia : 0;
+                currentUnits[unitKey].areaProfile += !isBlacha ? item.powierzchnia : 0;
 
                 const brandKey = item.farba.toUpperCase();
                 const ptConfig = paintTypes.find(p => p.id === brandKey) || paintTypes[0]; 
-                if(!currentUnits[unit].brandStats[brandKey]) currentUnits[unit].brandStats[brandKey] = { vol: 0, thinner: 0, colors: {}, pct: ptConfig.thinnerPct };
+                if(!currentUnits[unitKey].brandStats[brandKey]) currentUnits[unitKey].brandStats[brandKey] = { vol: 0, thinner: 0, colors: {}, pct: ptConfig.thinnerPct };
                 
                 const yieldRate = isBlacha ? ptConfig.yieldBlachy : ptConfig.yieldProfile;
                 const vol = item.powierzchnia / yieldRate;
-                currentUnits[unit].brandStats[brandKey].vol += vol;
+                currentUnits[unitKey].brandStats[brandKey].vol += vol;
                 const cName = item.kolorInfo.name;
-                currentUnits[unit].brandStats[brandKey].colors[cName] = (currentUnits[unit].brandStats[brandKey].colors[cName] || 0) + vol;
+                currentUnits[unitKey].brandStats[brandKey].colors[cName] = (currentUnits[unitKey].brandStats[brandKey].colors[cName] || 0) + vol;
             });
             
             const currentYear = new Date().getFullYear();
@@ -2028,9 +2203,9 @@
             let existingEntryIndex = window.editingProtocolId ? printHistory.findIndex(e => e.id.toString() === window.editingProtocolId.toString()) : -1;
 
             if (existingEntryIndex !== -1) {
-                const unitNames = Object.keys(currentUnits);
-                if (unitNames.length > 1) { await customAlert("Podczas edycji wszystkie elementy w tabeli muszą należeć do jednego, oryginalnego projektu (i rodzaju materiału: BLACHY lub PROFILE)!"); return; }
-                const unit = unitNames[0]; const data = currentUnits[unit];
+                const unitKeys = Object.keys(currentUnits);
+                if (unitKeys.length > 1) { await customAlert("Podczas edycji wszystkie elementy w tabeli muszą należeć do jednego, oryginalnego projektu i być tego samego typu (tylko blachy lub tylko profile)!"); return; }
+                const uKey = unitKeys[0]; const data = currentUnits[uKey];
                 let totalThinner = 0;
                 paintTypes.forEach(pt => {
                     if(data.brandStats[pt.id]) { data.brandStats[pt.id].thinner = data.brandStats[pt.id].vol * (data.brandStats[pt.id].pct / 100); totalThinner += data.brandStats[pt.id].thinner; }
@@ -2042,12 +2217,12 @@
                 const authorStr = oldEntry.author + `<br><span class="text-[9px] text-gray-600 font-normal">[Edycja: ${currUserStr} ${editDateStr}]</span>`;
 
                 printHistory[existingEntryIndex] = {
-                    id: oldEntry.id, protocolNumber: oldEntry.protocolNumber, projectName: data.pureName, date: dateStr, unit: unit, area: data.area, cost: data.cost, areaBlachy: data.areaBlachy, areaProfile: data.areaProfile, brandStats: data.brandStats, thinnerVol: totalThinner, isError: oldEntry.isError, author: authorStr, items: JSON.parse(JSON.stringify(data.items))
+                    id: oldEntry.id, protocolNumber: oldEntry.protocolNumber, projectName: data.projectName, date: dateStr, unit: data.projectName, area: data.area, cost: data.cost, areaBlachy: data.areaBlachy, areaProfile: data.areaProfile, brandStats: data.brandStats, thinnerVol: totalThinner, isError: oldEntry.isError, author: authorStr, items: JSON.parse(JSON.stringify(data.items))
                 };
                 generatedNumbers.push(oldEntry.protocolNumber);
                 cancelEditMode();
             } else {
-                for (const [unit, data] of Object.entries(currentUnits)) {
+                for (const [uKey, data] of Object.entries(currentUnits)) {
                     let totalThinner = 0;
                     paintTypes.forEach(pt => {
                         if(data.brandStats[pt.id]) { data.brandStats[pt.id].thinner = data.brandStats[pt.id].vol * (data.brandStats[pt.id].pct / 100); totalThinner += data.brandStats[pt.id].thinner; }
@@ -2056,7 +2231,7 @@
                     const newProtocolNumber = `${protocolCounter}/${currentYear}`;
                     generatedNumbers.push(newProtocolNumber);
                     printHistory.push({
-                        id: Date.now() + Math.random().toString(36).substr(2, 9), protocolNumber: newProtocolNumber, projectName: data.pureName, date: dateStr, unit: unit, area: data.area, cost: data.cost, areaBlachy: data.areaBlachy, areaProfile: data.areaProfile, brandStats: data.brandStats, thinnerVol: totalThinner, isError: false, author: currentUser ? (currentUser.name || currentUser.login) : "Nieznany", items: JSON.parse(JSON.stringify(data.items))
+                        id: Date.now() + Math.random().toString(36).substr(2, 9), protocolNumber: newProtocolNumber, projectName: data.projectName, date: dateStr, unit: data.projectName, area: data.area, cost: data.cost, areaBlachy: data.areaBlachy, areaProfile: data.areaProfile, brandStats: data.brandStats, thinnerVol: totalThinner, isError: false, author: currentUser ? (currentUser.name || currentUser.login) : "Nieznany", items: JSON.parse(JSON.stringify(data.items))
                     });
                 }
             }
@@ -2097,7 +2272,6 @@
             cancelEditMode();
             inputData = JSON.parse(JSON.stringify(entry.items));
             let projName = entry.projectName;
-            if (projName && (projName.includes(" - BLACHY") || projName.includes(" - PROFILE"))) projName = projName.replace(" - BLACHY", "").replace(" - PROFILE", "");
             
             if(inputData.length > 0 && inputData[0].Jednostka) document.getElementById('formJednostka').value = projName;
             else document.getElementById('formJednostka').value = projName;
@@ -2118,7 +2292,6 @@
             window.tempInputData = null; 
             cancelEditMode(); inputData = JSON.parse(JSON.stringify(entry.items));
             let projName = entry.projectName;
-            if (projName && (projName.includes(" - BLACHY") || projName.includes(" - PROFILE"))) projName = projName.replace(" - BLACHY", "").replace(" - PROFILE", "");
             
             const sel = document.getElementById('formJednostka');
             if(sel) {
@@ -2394,8 +2567,6 @@
                         
                         const korekta = window.remanentAdjustments[i];
                         if (korekta !== undefined) {
-                            // Remanent różnica wyliczona. Różnica = target - balance
-                            // Aby być spójnym z dziennym: jeśli target > balance, to na plus
                             amountDisplay = (korekta > 0 ? "+" : "") + formatNumber(korekta, 2);
                         } else {
                             amountDisplay = formatNumber(Math.abs(row.amount), 2);
@@ -2473,7 +2644,7 @@
         window.addInduscoBulkRow = function() {
             const container = document.getElementById('induscoBulkRows'); const row = document.createElement('div');
             row.className = "flex flex-wrap gap-2 items-end indusco-bulk-row";
-            row.innerHTML = `<div class="flex-1 min-w-[200px]"><label class="block text-[10px] font-bold text-black mb-0.5 uppercase">Towar</label><select class="indusco-paint-select w-full border border-black p-1.5 text-sm outline-none bg-white">${window.getInduscoPaintsHtml()}</select></div><div class="w-40"><label class="block text-[10px] font-bold text-black mb-0.5 uppercase">Akcja</label><select onchange="handleInduscoActionChange(this)" class="indusco-action-type w-full border border-black p-1.5 text-sm outline-none bg-white"><option value="wydanie">Wydanie</option><option value="utylizacja">Utylizacja</option><option value="remanent">Remanent</option></select></div><div class="w-32"><label class="block text-[10px] font-bold text-black mb-0.5 uppercase">Ilość [L]</label><input type="number" step="0.1" class="indusco-amount-input w-full border border-black p-1.5 text-sm outline-none"></div><button onclick="this.parentElement.remove()" class="bg-white text-black border border-black hover:bg-red-600 hover:text-white font-bold px-3 py-1.5 text-sm uppercase transition" title="Usuń ten wiersz">X</button>`;
+            row.innerHTML = `<div class="flex-1 min-w-[200px]"><label class="block text-[10px] font-bold text-black mb-0.5 uppercase">Towar</label><select class="indusco-paint-select w-full border border-black p-1.5 text-sm outline-none bg-white">${window.getInduscoPaintsHtml()}</select></div><div class="w-40"><label class="block text-[10px] font-bold text-black mb-0.5 uppercase">Akcja</label><select onchange="handleInduscoActionChange(this)" class="indusco-action-type w-full border border-black p-1.5 text-sm outline-none bg-white"><option value="wydanie">Wydanie</option><option value="utylizacja">Utylizacja / Zniszczenie</option><option value="remanent">Remanent</option></select></div><div class="w-32"><label class="block text-[10px] font-bold text-black mb-0.5 uppercase">Ilość [L]</label><input type="number" step="0.1" class="indusco-amount-input w-full border border-black p-1.5 text-sm outline-none"></div><button onclick="this.parentElement.remove()" class="bg-white text-black border border-black hover:bg-red-600 hover:text-white font-bold px-3 py-1.5 text-sm uppercase transition" title="Usuń ten wiersz">X</button>`;
             container.appendChild(row);
         };
 
@@ -2696,81 +2867,6 @@
             });
 
             tfoot.innerHTML = `<tr><td colspan="2" class="px-2 py-3 border-r border-black text-right uppercase text-black font-bold bg-gray-200">SUMA WIDOCZNYCH:</td><td class="px-2 py-3 border-r border-black text-green-700 font-bold text-sm bg-gray-200">${window.formatNumber(sumDostawa)}</td><td class="px-2 py-3 border-r border-black text-red-600 font-bold text-sm bg-gray-200">${window.formatNumber(sumUtylizacja)}</td><td class="px-2 py-3 border-r border-black font-bold text-sm bg-gray-200 text-blue-700">${window.formatNumber(sumZuzycie)}</td><td class="px-2 py-3 border-r border-black font-bold bg-yellow-100 text-black text-sm">${window.formatNumber(filteredEvents[filteredEvents.length-1].pozostalo)}</td><td class="px-2 py-3 border-r border-black text-blue-700 font-bold text-sm bg-gray-200">${window.formatNumber(sumM2)}</td><td colspan="3" class="px-2 py-3 bg-gray-200 border-black print-hide"></td></tr>`;
-        };
-
-        window.addEventListener('DOMContentLoaded', async () => {
-            try {
-                document.getElementById('induscoDate').valueAsDate = new Date();
-                document.getElementById('protocolDateInput').valueAsDate = new Date(); 
-                initGatunkiSelect(); renderColorsTable(); renderDbTable(); renderPaintTypesTable();
-                updatePaintDropdowns(); renderHistoryTable(); renderUsersTable(); renderProjectsList();
-                renderInduscoTable(); addInduscoBulkRow(); toggleFormFields(); 
-            } catch (e) { console.error("Błąd inicjalizacji: ", e); }
-
-            if (!USE_FIREBASE) {
-                let autoLoaded = false;
-                try {
-                    const response = await fetch('./Status/status.json', { cache: "no-store" });
-                    if (response.ok) {
-                        const text = await response.text();
-                        if (text && text !== "null") { await applyProjectData(text, true); autoLoaded = true; }
-                    }
-                } catch (err) {}
-                if (!autoLoaded) {
-                    document.getElementById('mainAppContainer').classList.add('locked-ui');
-                    const initialOverlay = document.getElementById('initialLoadOverlay');
-                    if (initialOverlay) { initialOverlay.classList.remove('hidden'); initialOverlay.classList.add('flex'); }
-                }
-            } else { document.getElementById('mainAppContainer').classList.add('locked-ui'); }
-        });
-
-        window.cancelEditMode = function() {
-            window.editingProtocolId = null;
-            const saveBtn = document.getElementById('btnSaveToSummary');
-            if (saveBtn) {
-                saveBtn.innerHTML = 'Zapisz do Zestawienia';
-                if (inputData.length > 0 && !isPreviewMode) {
-                    saveBtn.className = "bg-green-600 text-white border border-black hover:bg-green-700 px-6 py-2 text-sm font-bold transition flex items-center gap-1.5 uppercase shadow-md";
-                } else {
-                    saveBtn.className = "bg-black text-white border border-black hover:bg-gray-800 px-6 py-2 text-sm font-bold transition flex items-center gap-1.5 uppercase shadow-md";
-                }
-            }
-        };
-
-        window.addEventListener('beforeprint', () => {
-            const dateStr = new Date().toLocaleDateString('pl-PL');
-            document.querySelectorAll('.print-history-only .print-date').forEach(el => el.textContent = dateStr);
-        });
-
-        window.updatePrintHeaders = function(newProtocolNum = null) {
-            let projName = document.getElementById('formJednostka') ? document.getElementById('formJednostka').value.trim() : "";
-            if (!projName && inputData.length > 0 && inputData[0].Jednostka) projName = inputData[0].Jednostka;
-            document.querySelectorAll('.print-project-name').forEach(el => el.textContent = projName || "-");
-
-            let protNumStr = "[ NR: SZKIC (NIEZAPISANY) ]";
-            if (newProtocolNum) {
-                protNumStr = `[ NR: ${newProtocolNum} ]`;
-            } else if (isPreviewMode && currentPreviewProtocolNumber) {
-                protNumStr = `[ NR: ${currentPreviewProtocolNumber} ]`;
-            }
-            
-            document.querySelectorAll('.print-protocol-number').forEach(el => {
-                el.textContent = protNumStr;
-                if(protNumStr.includes("SZKIC")) el.classList.add("text-gray-500", "italic");
-                else el.classList.remove("text-gray-500", "italic");
-            });
-        };
-
-        window.resetProtocolCounter = async function() {
-            if (!currentUser || currentUser.role !== 'admin') { await customAlert("Brak uprawnień administratora."); return; }
-            const pin = await customPrompt("Podaj kod autoryzacji (PIN), aby zresetować licznik numeracji kalkulacji (od 1):", 'password');
-            if (pin === "4321") {
-                if (await customConfirm("UWAGA! Numery kolejnych kalkulacji zaczną się ponownie od początku. Czy na pewno chcesz wyzerować licznik?")) {
-                    protocolCounter = 0; autoSaveToDisk();
-                    await customAlert("Licznik kalkulacji został wyzerowany. Kolejna będzie miała nr 1.");
-                    updatePrintHeaders();
-                }
-            } else if (pin !== null) await customAlert("Nieprawidłowy kod PIN.");
         };
     </script>
 </body>
