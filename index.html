@@ -164,13 +164,14 @@
                 <div>
                     <label class="block text-xs font-bold text-black mb-1 uppercase">Akcja</label>
                     <select id="editInduscoAction" class="w-full border border-black p-1.5 text-sm outline-none bg-white">
-                        <option value="dostawa">Wydanie</option>
+                        <option value="wydanie">Wydanie</option>
                         <option value="utylizacja">Utylizacja / Zniszczenie</option>
                         <option value="remanent">Remanent</option>
                     </select>
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-black mb-1 uppercase">Ilość [L]</label>
+                    <!-- Brak min="0" żeby można było wpisać wartości ujemne przy remanencie -->
                     <input type="number" id="editInduscoAmount" step="0.1" class="w-full border border-black p-1.5 text-sm outline-none bg-white">
                 </div>
             </div>
@@ -532,7 +533,7 @@
             
             <div class="bg-white border border-black print-hide mt-4">
                 <div class="p-3 border-b border-black flex flex-col sm:flex-row justify-between items-center bg-white gap-3">
-                    <h2 class="text-sm font-bold text-black uppercase">Historia magazynowa (wydania/utylizacje/remanenty)</h2>
+                    <h2 class="text-sm font-bold text-black uppercase">Historia magazynowa (wydania/utylizacje/korekty)</h2>
                 </div>
                 <div class="p-3 grid grid-cols-1 md:grid-cols-3 gap-3 bg-white">
                     <div>
@@ -877,7 +878,6 @@
         ];
         let laborCosts = { blachy: 4.20, profile: 6.80 };
 
-        // --- CUSTOM UI DIALOGS ---
         window.showCustomDialog = function(options) {
             return new Promise((resolve) => {
                 const overlay = document.getElementById('customDialogOverlay');
@@ -929,8 +929,6 @@
         window.customConfirm = async function(msg) { return await showCustomDialog({type: 'confirm', message: msg, title: '<svg class="w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> Potwierdzenie'}); };
         window.customPrompt = async function(msg, inputType='text') { return await showCustomDialog({type: 'prompt', message: msg, title: '<svg class="w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg> Wprowadź dane', inputType}); };
 
-        // --- STREAMING_CHUNK:Date Formatting Utility Functions ---
-        // --- FUNKCJE DAT ---
         window.dateToISO = function(dateObj) {
             const y = dateObj.getFullYear();
             const m = String(dateObj.getMonth() + 1).padStart(2, '0');
@@ -963,8 +961,6 @@
             document.querySelectorAll('#view-calc .print-date, #view-costs .print-date').forEach(el => el.textContent = plDate);
         };
 
-        // --- STREAMING_CHUNK:Base Application Rule Sets and Grade Tables ---
-        // --- BAZOWE ZESTAWIENIA (GATUNKI/REGUŁY) ---
         const steelGradesList = [
             "A", "B", "D", "E", 
             "A36", "D36", "E36", "F36", "A40", "D40", "E40", "F40", "A420", "D420", "E420", "F420", "A460", "D460", "E460", "F460", "A500", "D500", "E500", "F500", "A550", "D550", "E550", "F550", "A620", "D620", "E620", "F620", "A690", "D690", "E690", "F690",
@@ -1026,8 +1022,6 @@
             });
         };
 
-        // --- STREAMING_CHUNK:Project State Management and Saving ---
-        // --- ZARZĄDZANIE STANEM & BAZĄ ---
         window.getProjectState = function() {
             return {
                 isMm: true,
@@ -1175,7 +1169,6 @@
             event.target.value = ''; 
         };
 
-        // --- STREAMING_CHUNK:Applying Project Data Loading Logic ---
         window.applyProjectData = async function(jsonString, isSilent = false) {
             try {
                 const projectData = JSON.parse(jsonString);
@@ -1223,11 +1216,7 @@
                     }
                     if(inputData.length > 0 && inputData[0].Jednostka) {
                         const projInput = document.getElementById('formJednostka');
-                        // Clean legacy " - BLACHY" or " - PROFILE" if exists in form
-                        let val = inputData[0].Jednostka;
-                        if (val.includes(" - BLACHY")) val = val.replace(" - BLACHY", "");
-                        if (val.includes(" - PROFILE")) val = val.replace(" - PROFILE", "");
-                        if (projInput) projInput.value = val;
+                        if (projInput) projInput.value = inputData[0].Jednostka;
                     }
                 }
                 if (projectData.printHistory) {
@@ -1278,8 +1267,6 @@
             }
         };
 
-        // --- STREAMING_CHUNK:Tab and Navigation Logic ---
-        // --- ZAKŁADKI I MENU ---
         window.toggleMoreTabs = function(forceClose = false) {
             const menu = document.getElementById('moreTabsMenu');
             const btn = document.getElementById('btnMoreTabs');
@@ -1339,8 +1326,6 @@
             if (tabId === 'daily') { renderDailySidebar(); renderDailyLedger(); }
         };
 
-        // --- STREAMING_CHUNK:User Authorization ---
-        // --- AUTORYZACJA ---
         window.handleLogin = function() {
             const user = document.getElementById('loginUsername').value.trim();
             const pass = document.getElementById('loginPassword').value;
@@ -1392,8 +1377,6 @@
             document.querySelectorAll('.protocol-author').forEach(el => el.textContent = name || "");
         };
 
-        // --- STREAMING_CHUNK:Projects and Users Table Rendering ---
-        // --- UŻYTKOWNICY & PROJEKTY ---
         window.renderProjectsList = function() {
             const tbody = document.getElementById('projectsTableBody');
             if(tbody) {
@@ -1495,8 +1478,6 @@
             } else if (pin !== null) await customAlert("Nieprawidłowy kod PIN.");
         };
 
-        // --- STREAMING_CHUNK:Paints configuration and labor costs ---
-        // --- SHOPPRIMERY W WYDAJNOŚĆ ---
         window.renderPaintTypesTable = function() {
             const tbody = document.getElementById('paintTypesTableBody');
             if(!tbody) return;
@@ -1548,7 +1529,7 @@
         };
 
         window.removePaintType = async function(id) {
-            if(['INTERPLATE', 'SIGMAWELD'].includes(id)) { await customAlert('Nie można usunąć podstawowych farb systemowych.'); return; }
+            if(['INTERPLATE', 'SIGMAWELD', 'INNY'].includes(id)) { await customAlert('Nie można usunąć podstawowych farb systemowych.'); return; }
             if(await customConfirm(`Czy na pewno usunąć farbę ${id}?`)) {
                 paintTypes = paintTypes.filter(p => p.id !== id);
                 renderPaintTypesTable(); updatePaintDropdowns(); renderDailySidebar(); renderHistoryTable(); calculateCosts(); autoSaveToDisk();
@@ -1592,90 +1573,102 @@
             });
         };
 
-        // --- STREAMING_CHUNK:App Initialization ---
-        // --- DZIAŁANIE APLIKACJI I BAZY ---
-        window.addEventListener('DOMContentLoaded', async () => {
-            try {
-                document.getElementById('induscoDate').valueAsDate = new Date();
-                document.getElementById('protocolDateInput').valueAsDate = new Date(); 
-                initGatunkiSelect(); renderColorsTable(); renderDbTable(); renderPaintTypesTable();
-                updatePaintDropdowns(); renderHistoryTable(); renderUsersTable(); renderProjectsList();
-                renderInduscoTable(); addInduscoBulkRow(); toggleFormFields(); 
-            } catch (e) { console.error("Błąd inicjalizacji: ", e); }
+        window.filterDbTable = function() { window.renderDbTable(); };
 
-            if (!USE_FIREBASE) {
-                let autoLoaded = false;
-                try {
-                    const response = await fetch('./Status/status.json', { cache: "no-store" });
-                    if (response.ok) {
-                        const text = await response.text();
-                        if (text && text !== "null") { await applyProjectData(text, true); autoLoaded = true; }
-                    }
-                } catch (err) {}
-                if (!autoLoaded) {
-                    document.getElementById('mainAppContainer').classList.add('locked-ui');
-                    const initialOverlay = document.getElementById('initialLoadOverlay');
-                    if (initialOverlay) { initialOverlay.classList.remove('hidden'); initialOverlay.classList.add('flex'); }
-                }
-            } else { document.getElementById('mainAppContainer').classList.add('locked-ui'); }
-        });
+        window.updateDbMultiplier = async function(cat, key, value) {
+            const cleanValue = value.replace(/[\s\u00A0]/g, '').replace(',', '.');
+            const num = parseFloat(cleanValue);
+            if (!isNaN(num) && num > 0) {
+                database[cat][key] = num;
+                window.updateProfilSelect(); window.calculate();
+                window.autoSaveToDisk();
+            } else {
+                await customAlert("Podana wartość musi być liczbą większą od zera.");
+                window.renderDbTable();
+            }
+        };
 
-        window.cancelEditMode = function() {
-            window.editingProtocolId = null;
-            const saveBtn = document.getElementById('btnSaveToSummary');
-            if (saveBtn) {
-                saveBtn.innerHTML = 'Zapisz do Zestawienia';
-                if (inputData.length > 0 && !isPreviewMode) {
-                    saveBtn.className = "bg-green-600 text-white border border-black hover:bg-green-700 px-6 py-2 text-sm font-bold transition flex items-center gap-1.5 uppercase shadow-md";
-                } else {
-                    saveBtn.className = "bg-black text-white border border-black hover:bg-gray-800 px-6 py-2 text-sm font-bold transition flex items-center gap-1.5 uppercase shadow-md";
+        window.renderDbTable = function() {
+            const previewSection = document.getElementById('dbPreviewSection');
+            const tbody = document.getElementById('dbTableBody');
+            const countBadge = document.getElementById('dbCountBadge');
+            const searchInput = document.getElementById('dbSearchInput');
+            const query = searchInput ? searchInput.value.toLowerCase() : "";
+            
+            if(!tbody) return;
+            tbody.innerHTML = '';
+            let totalCount = 0; let totalInDb = 0;
+            
+            for (const cat in database) {
+                if (cat === 'Płaskowniki FB') continue; 
+                const keys = Object.keys(database[cat]).sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
+                totalInDb += keys.length;
+                if (keys.length === 0) continue;
+                
+                const filteredKeys = keys.filter(k => k.toLowerCase().includes(query));
+                if (filteredKeys.length === 0) continue;
+                
+                const headerTr = document.createElement('tr');
+                headerTr.innerHTML = `<td colspan="2" class="font-bold uppercase tracking-wider text-[11px] bg-gray-100 text-black px-3 py-2 border-b border-black">${cat}</td>`;
+                tbody.appendChild(headerTr);
+                
+                filteredKeys.forEach(key => {
+                    totalCount++;
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-gray-100 transition-colors";
+                    tr.innerHTML = `
+                        <td class="pl-6 font-bold text-black px-3 py-1.5 border-b border-gray-300">${key}</td>
+                        <td class="text-right px-3 py-1.5 border-b border-gray-300">
+                            <input type="text" value="${window.formatNumber(database[cat][key], 4)}" 
+                                onchange="updateDbMultiplier('${cat}', '${key}', this.value)" class="w-24 text-right bg-transparent focus:bg-white border border-transparent hover:border-black focus:border-black outline-none text-black font-bold px-1 py-0.5 transition-all">
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+            if(countBadge) countBadge.textContent = totalCount;
+            if(previewSection) {
+                if (totalInDb > 0) { previewSection.classList.remove('hidden'); previewSection.classList.add('flex'); } 
+                else { previewSection.classList.add('hidden'); previewSection.classList.remove('flex'); }
+            }
+            window.updateProfilSelect();
+
+            const dlProfile = document.getElementById('dl-profile');
+            if (dlProfile) {
+                dlProfile.innerHTML = '';
+                for (const cat in database) {
+                    if (cat === 'Płaskowniki FB') continue; 
+                    Object.keys(database[cat]).forEach(k => {
+                        const opt = document.createElement('option');
+                        opt.value = k;
+                        dlProfile.appendChild(opt);
+                    });
                 }
             }
         };
 
-        window.addEventListener('beforeprint', () => {
-            const dateStr = new Date().toLocaleDateString('pl-PL');
-            document.querySelectorAll('.print-history-only .print-date').forEach(el => el.textContent = dateStr);
-        });
+        window.addManualDbItem = async function() {
+            const cat = document.getElementById('formDbKategoria').value;
+            const nazwa = document.getElementById('formDbNazwa').value.trim().toUpperCase().replace(/[\.\$#\[\]\/]/g, ',');
+            const mnoznikStr = document.getElementById('formDbMnoznik').value;
+            const mnoznik = parseFloat(mnoznikStr.replace(',', '.'));
 
-        window.updatePrintHeaders = function(newProtocolNum = null) {
-            let projName = document.getElementById('formJednostka') ? document.getElementById('formJednostka').value.trim() : "";
-            if (!projName && inputData.length > 0 && inputData[0].Jednostka) projName = inputData[0].Jednostka;
-            
-            // Clean suffix just as a safe fallback in case someone typed it manually
-            if (projName.includes(" - BLACHY")) projName = projName.replace(" - BLACHY", "");
-            if (projName.includes(" - PROFILE")) projName = projName.replace(" - PROFILE", "");
-            
-            document.querySelectorAll('.print-project-name').forEach(el => el.textContent = projName || "-");
+            if (!nazwa) { await customAlert("Podaj nazwę profilu!"); return; }
+            if (isNaN(mnoznik) || mnoznik <= 0) { await customAlert("Podaj prawidłowy mnożnik powierzchni (> 0)!"); return; }
 
-            let protNumStr = "[ NR: SZKIC (NIEZAPISANY) ]";
-            if (newProtocolNum) {
-                protNumStr = `[ NR: ${newProtocolNum} ]`;
-            } else if (isPreviewMode && currentPreviewProtocolNumber) {
-                protNumStr = `[ NR: ${currentPreviewProtocolNumber} ]`;
+            if (!database[cat]) database[cat] = {};
+            if (database[cat][nazwa]) {
+                if (!(await customConfirm(`Profil ${nazwa} już istnieje w kategorii ${cat}. Czy chcesz zaktualizować jego mnożnik?`))) return;
             }
-            
-            document.querySelectorAll('.print-protocol-number').forEach(el => {
-                el.textContent = protNumStr;
-                if(protNumStr.includes("SZKIC")) el.classList.add("text-gray-500", "italic");
-                else el.classList.remove("text-gray-500", "italic");
-            });
+
+            database[cat][nazwa] = mnoznik;
+            document.getElementById('formDbNazwa').value = '';
+            document.getElementById('formDbMnoznik').value = '';
+            window.renderDbTable();
+            window.autoSaveToDisk();
+            await customAlert(`Zapisano profil: ${nazwa}`);
         };
 
-        window.resetProtocolCounter = async function() {
-            if (!currentUser || currentUser.role !== 'admin') { await customAlert("Brak uprawnień administratora."); return; }
-            const pin = await customPrompt("Podaj kod autoryzacji (PIN), aby zresetować licznik numeracji kalkulacji (od 1):", 'password');
-            if (pin === "4321") {
-                if (await customConfirm("UWAGA! Numery kolejnych kalkulacji zaczną się ponownie od początku. Czy na pewno chcesz wyzerować licznik?")) {
-                    protocolCounter = 0; autoSaveToDisk();
-                    await customAlert("Licznik kalkulacji został wyzerowany. Kolejna będzie miała nr 1.");
-                    updatePrintHeaders();
-                }
-            } else if (pin !== null) await customAlert("Nieprawidłowy kod PIN.");
-        };
-
-        // --- STREAMING_CHUNK:Calculator Forms and Formula execution ---
-        // --- LOGIKA KALKULACJI ---
         window.initGatunkiSelect = function() {
             const select = document.getElementById('formGatunek');
             if (!select) return;
@@ -1730,12 +1723,8 @@
         };
 
         window.addManualItem = async function() {
-            let jednostka = document.getElementById('formJednostka').value.trim();
+            const jednostka = document.getElementById('formJednostka').value.trim();
             if (!jednostka) { await customAlert("Wprowadź nazwę projektu przed dodaniem elementu!"); document.getElementById('formJednostka').focus(); return; }
-
-            // Clean any manual suffixes users might type just in case
-            if (jednostka.includes(" - BLACHY")) jednostka = jednostka.replace(" - BLACHY", "");
-            if (jednostka.includes(" - PROFILE")) jednostka = jednostka.replace(" - PROFILE", "");
 
             const farba = document.getElementById('formFarba').value;
             const typ = document.getElementById('formTyp').value;
@@ -1831,7 +1820,6 @@
             inputData[index].manualArea = null; calculate();
         };
 
-        // --- STREAMING_CHUNK:Results Generation and Table updates ---
         window.calculate = function() {
             resultsData = []; let totalAreaSum = 0;
             updatePrintHeaders();
@@ -1896,33 +1884,32 @@
                 if (item.powierzchnia <= 0) return;
                 const isBlacha = item.typ === 'Blacha';
                 const matType = isBlacha ? 'BLACHY' : 'PROFILE';
-                const rawUnitName = (item.jednostka || "BRAK JEDNOSTKI");
-                const unitKey = rawUnitName + " - " + matType;
+                const unitName = (item.jednostka || "BRAK JEDNOSTKI") + " - " + matType;
                 
-                if (!unitsData[unitKey]) {
-                    unitsData[unitKey] = { rawName: rawUnitName, costBlachy: 0, costProfile: 0, paintVolumes: {} };
-                    paintTypes.forEach(pt => { unitsData[unitKey].paintVolumes[pt.id] = { totalVolume: 0, colors: {}, thinnerPct: pt.thinnerPct }; });
+                if (!unitsData[unitName]) {
+                    unitsData[unitName] = { costBlachy: 0, costProfile: 0, paintVolumes: {} };
+                    paintTypes.forEach(pt => { unitsData[unitName].paintVolumes[pt.id] = { totalVolume: 0, colors: {}, thinnerPct: pt.thinnerPct }; });
                 }
 
                 const appliedCostRate = isBlacha ? laborCosts.blachy : laborCosts.profile;
                 const itemCost = item.powierzchnia * appliedCostRate;
-                if (isBlacha) unitsData[unitKey].costBlachy += itemCost; else unitsData[unitKey].costProfile += itemCost;
+                if (isBlacha) unitsData[unitName].costBlachy += itemCost; else unitsData[unitName].costProfile += itemCost;
                 grandTotalCost += itemCost;
 
                 const brandKey = item.farba.toUpperCase();
                 const ptConfig = paintTypes.find(p => p.id === brandKey) || paintTypes[0]; 
-                if(!unitsData[unitKey].paintVolumes[brandKey]) unitsData[unitKey].paintVolumes[brandKey] = { totalVolume: 0, colors: {}, thinnerPct: ptConfig.thinnerPct };
+                if(!unitsData[unitName].paintVolumes[brandKey]) unitsData[unitName].paintVolumes[brandKey] = { totalVolume: 0, colors: {}, thinnerPct: ptConfig.thinnerPct };
                 
                 const appliedYield = isBlacha ? ptConfig.yieldBlachy : ptConfig.yieldProfile;
                 const itemPaintVol = item.powierzchnia / appliedYield;
-                unitsData[unitKey].paintVolumes[brandKey].totalVolume += itemPaintVol;
+                unitsData[unitName].paintVolumes[brandKey].totalVolume += itemPaintVol;
 
                 const colorName = item.kolorInfo.name; const colorHex = item.kolorInfo.hex;
-                if (!unitsData[unitKey].paintVolumes[brandKey].colors[colorName]) unitsData[unitKey].paintVolumes[brandKey].colors[colorName] = { hex: colorHex, volume: 0 };
-                unitsData[unitKey].paintVolumes[brandKey].colors[colorName].volume += itemPaintVol;
+                if (!unitsData[unitName].paintVolumes[brandKey].colors[colorName]) unitsData[unitName].paintVolumes[brandKey].colors[colorName] = { hex: colorHex, volume: 0 };
+                unitsData[unitName].paintVolumes[brandKey].colors[colorName].volume += itemPaintVol;
             });
 
-            for (const [unitKey, data] of Object.entries(unitsData)) {
+            for (const [unit, data] of Object.entries(unitsData)) {
                 const unitTotalCost = data.costBlachy + data.costProfile;
                 const generateBrandHtml = (brandKey) => {
                     const bData = data.paintVolumes[brandKey];
@@ -1944,7 +1931,7 @@
                 let dynamicColumnsHtml = paintTypes.map(pt => `<div class="border border-black p-1 bg-white"><h4 class="text-[10px] font-bold text-black border-b border-black pb-0.5 uppercase truncate" title="${pt.name}">${pt.name}</h4>${generateBrandHtml(pt.id)}</div>`).join('');
                 const colCountClass = Math.min(paintTypes.length + 1, 5);
 
-                unitCard.innerHTML = `<h3 class="text-xs font-bold uppercase mb-1 pb-0.5 border-b border-black flex items-center justify-between text-black"><span>KALKULACJA: ${data.rawName}</span><span class="border border-black px-1">SUMA: ${formatNumber(unitTotalCost, 2)} PLN</span></h3>
+                unitCard.innerHTML = `<h3 class="text-xs font-bold uppercase mb-1 pb-0.5 border-b border-black flex items-center justify-between text-black"><span>KALKULACJA: ${unit}</span><span class="border border-black px-1">SUMA: ${formatNumber(unitTotalCost, 2)} PLN</span></h3>
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-${colCountClass} gap-2"><div class="border border-black p-1 bg-white"><h4 class="text-[10px] font-bold text-black uppercase border-b border-black pb-0.5">Koszty</h4><div class="space-y-0.5 text-[9px] mt-1 font-bold text-black"><div class="flex justify-between"><span>BLACHY:</span><span>${formatNumber(data.costBlachy, 2)} PLN</span></div><div class="flex justify-between"><span>PROFILE/RURY:</span><span>${formatNumber(data.costProfile, 2)} PLN</span></div><div class="border-t border-black mt-0.5 pt-0.5 flex justify-between"><span>RAZEM:</span><span>${formatNumber(unitTotalCost, 2)} PLN</span></div></div></div>${dynamicColumnsHtml}</div>`;
                 container.appendChild(unitCard);
             }
@@ -1953,7 +1940,6 @@
             container.appendChild(grandTotalCard); autoSaveToDisk(); 
         };
 
-        // --- STREAMING_CHUNK:Results Data Table Rendering ---
         window.renderTable = function() {
             const tbody = document.getElementById('resultsTableBody'); tbody.innerHTML = '';
             const paintOptionsHtml = paintTypes.map(pt => `<option value="${pt.id}">${pt.name}</option>`).join('');
@@ -2002,7 +1988,6 @@
             document.querySelectorAll('.action-col').forEach(el => { if(isPreviewMode) el.classList.add('hidden'); else el.classList.remove('hidden'); });
         };
 
-        // --- STREAMING_CHUNK:History Save Mechanics ---
         window.saveToSummaryInternal = async function() {
             const dateInputVal = document.getElementById('protocolDateInput').value;
             const dateStr = formatISOToPL(dateInputVal) || new Date().toLocaleDateString('pl-PL');
@@ -2012,31 +1997,29 @@
                 if (item.powierzchnia <= 0) return;
                 const isBlacha = item.typ === 'Blacha';
                 const matType = isBlacha ? 'BLACHY' : 'PROFILE';
-                const rawUnit = (item.jednostka || "Brak jednostki");
-                // Klucz wewnętrzny do rozdzielenia protokołów
-                const unitKey = rawUnit + " - " + matType; 
+                const unit = (item.jednostka || "Brak jednostki") + " - " + matType;
                 
-                if (!currentUnits[unitKey]) {
-                    currentUnits[unitKey] = { rawName: rawUnit, area: 0, cost: 0, areaBlachy: 0, areaProfile: 0, brandStats: {}, items: [] };
-                    paintTypes.forEach(pt => currentUnits[unitKey].brandStats[pt.id] = { vol: 0, thinner: 0, colors: {}, pct: pt.thinnerPct });
+                if (!currentUnits[unit]) {
+                    currentUnits[unit] = { area: 0, cost: 0, areaBlachy: 0, areaProfile: 0, brandStats: {}, items: [], pureName: (item.jednostka || "Brak jednostki") };
+                    paintTypes.forEach(pt => currentUnits[unit].brandStats[pt.id] = { vol: 0, thinner: 0, colors: {}, pct: pt.thinnerPct });
                 }
                 
-                currentUnits[unitKey].area += item.powierzchnia;
-                currentUnits[unitKey].items.push(inputData[item.originalIndex]);
+                currentUnits[unit].area += item.powierzchnia;
+                currentUnits[unit].items.push(inputData[item.originalIndex]);
                 const costRate = isBlacha ? laborCosts.blachy : laborCosts.profile;
-                currentUnits[unitKey].cost += item.powierzchnia * costRate;
-                currentUnits[unitKey].areaBlachy += isBlacha ? item.powierzchnia : 0;
-                currentUnits[unitKey].areaProfile += !isBlacha ? item.powierzchnia : 0;
+                currentUnits[unit].cost += item.powierzchnia * costRate;
+                currentUnits[unit].areaBlachy += isBlacha ? item.powierzchnia : 0;
+                currentUnits[unit].areaProfile += !isBlacha ? item.powierzchnia : 0;
 
                 const brandKey = item.farba.toUpperCase();
                 const ptConfig = paintTypes.find(p => p.id === brandKey) || paintTypes[0]; 
-                if(!currentUnits[unitKey].brandStats[brandKey]) currentUnits[unitKey].brandStats[brandKey] = { vol: 0, thinner: 0, colors: {}, pct: ptConfig.thinnerPct };
+                if(!currentUnits[unit].brandStats[brandKey]) currentUnits[unit].brandStats[brandKey] = { vol: 0, thinner: 0, colors: {}, pct: ptConfig.thinnerPct };
                 
                 const yieldRate = isBlacha ? ptConfig.yieldBlachy : ptConfig.yieldProfile;
                 const vol = item.powierzchnia / yieldRate;
-                currentUnits[unitKey].brandStats[brandKey].vol += vol;
+                currentUnits[unit].brandStats[brandKey].vol += vol;
                 const cName = item.kolorInfo.name;
-                currentUnits[unitKey].brandStats[brandKey].colors[cName] = (currentUnits[unitKey].brandStats[brandKey].colors[cName] || 0) + vol;
+                currentUnits[unit].brandStats[brandKey].colors[cName] = (currentUnits[unit].brandStats[brandKey].colors[cName] || 0) + vol;
             });
             
             const currentYear = new Date().getFullYear();
@@ -2045,9 +2028,9 @@
             let existingEntryIndex = window.editingProtocolId ? printHistory.findIndex(e => e.id.toString() === window.editingProtocolId.toString()) : -1;
 
             if (existingEntryIndex !== -1) {
-                const unitKeys = Object.keys(currentUnits);
-                if (unitKeys.length > 1) { await customAlert("Podczas edycji wszystkie elementy w tabeli muszą należeć do jednego, oryginalnego projektu (i rodzaju materiału: BLACHY lub PROFILE)!"); return; }
-                const unitKey = unitKeys[0]; const data = currentUnits[unitKey];
+                const unitNames = Object.keys(currentUnits);
+                if (unitNames.length > 1) { await customAlert("Podczas edycji wszystkie elementy w tabeli muszą należeć do jednego, oryginalnego projektu (i rodzaju materiału: BLACHY lub PROFILE)!"); return; }
+                const unit = unitNames[0]; const data = currentUnits[unit];
                 let totalThinner = 0;
                 paintTypes.forEach(pt => {
                     if(data.brandStats[pt.id]) { data.brandStats[pt.id].thinner = data.brandStats[pt.id].vol * (data.brandStats[pt.id].pct / 100); totalThinner += data.brandStats[pt.id].thinner; }
@@ -2059,12 +2042,12 @@
                 const authorStr = oldEntry.author + `<br><span class="text-[9px] text-gray-600 font-normal">[Edycja: ${currUserStr} ${editDateStr}]</span>`;
 
                 printHistory[existingEntryIndex] = {
-                    id: oldEntry.id, protocolNumber: oldEntry.protocolNumber, projectName: data.rawName, date: dateStr, unit: data.rawName, area: data.area, cost: data.cost, areaBlachy: data.areaBlachy, areaProfile: data.areaProfile, brandStats: data.brandStats, thinnerVol: totalThinner, isError: oldEntry.isError, author: authorStr, items: JSON.parse(JSON.stringify(data.items))
+                    id: oldEntry.id, protocolNumber: oldEntry.protocolNumber, projectName: data.pureName, date: dateStr, unit: unit, area: data.area, cost: data.cost, areaBlachy: data.areaBlachy, areaProfile: data.areaProfile, brandStats: data.brandStats, thinnerVol: totalThinner, isError: oldEntry.isError, author: authorStr, items: JSON.parse(JSON.stringify(data.items))
                 };
                 generatedNumbers.push(oldEntry.protocolNumber);
                 cancelEditMode();
             } else {
-                for (const [unitKey, data] of Object.entries(currentUnits)) {
+                for (const [unit, data] of Object.entries(currentUnits)) {
                     let totalThinner = 0;
                     paintTypes.forEach(pt => {
                         if(data.brandStats[pt.id]) { data.brandStats[pt.id].thinner = data.brandStats[pt.id].vol * (data.brandStats[pt.id].pct / 100); totalThinner += data.brandStats[pt.id].thinner; }
@@ -2073,7 +2056,7 @@
                     const newProtocolNumber = `${protocolCounter}/${currentYear}`;
                     generatedNumbers.push(newProtocolNumber);
                     printHistory.push({
-                        id: Date.now() + Math.random().toString(36).substr(2, 9), protocolNumber: newProtocolNumber, projectName: data.rawName, date: dateStr, unit: data.rawName, area: data.area, cost: data.cost, areaBlachy: data.areaBlachy, areaProfile: data.areaProfile, brandStats: data.brandStats, thinnerVol: totalThinner, isError: false, author: currentUser ? (currentUser.name || currentUser.login) : "Nieznany", items: JSON.parse(JSON.stringify(data.items))
+                        id: Date.now() + Math.random().toString(36).substr(2, 9), protocolNumber: newProtocolNumber, projectName: data.pureName, date: dateStr, unit: unit, area: data.area, cost: data.cost, areaBlachy: data.areaBlachy, areaProfile: data.areaProfile, brandStats: data.brandStats, thinnerVol: totalThinner, isError: false, author: currentUser ? (currentUser.name || currentUser.login) : "Nieznany", items: JSON.parse(JSON.stringify(data.items))
                     });
                 }
             }
@@ -2104,7 +2087,6 @@
             document.body.classList.add('print-history'); window.print(); document.body.classList.remove('print-history');
         };
 
-        // --- STREAMING_CHUNK:History Loading and Previews ---
         window.loadHistoryItem = async function(id) {
             const entry = printHistory.find(e => e.id.toString() === id.toString());
             if (!entry || !entry.items) { await customAlert("Brak szczegółów dla tej kalkulacji."); return; }
@@ -2115,6 +2097,7 @@
             cancelEditMode();
             inputData = JSON.parse(JSON.stringify(entry.items));
             let projName = entry.projectName;
+            if (projName && (projName.includes(" - BLACHY") || projName.includes(" - PROFILE"))) projName = projName.replace(" - BLACHY", "").replace(" - PROFILE", "");
             
             if(inputData.length > 0 && inputData[0].Jednostka) document.getElementById('formJednostka').value = projName;
             else document.getElementById('formJednostka').value = projName;
@@ -2135,6 +2118,7 @@
             window.tempInputData = null; 
             cancelEditMode(); inputData = JSON.parse(JSON.stringify(entry.items));
             let projName = entry.projectName;
+            if (projName && (projName.includes(" - BLACHY") || projName.includes(" - PROFILE"))) projName = projName.replace(" - BLACHY", "").replace(" - PROFILE", "");
             
             const sel = document.getElementById('formJednostka');
             if(sel) {
@@ -2184,7 +2168,6 @@
             } else if (pin !== null) await customAlert("Nieprawidłowy kod PIN.");
         };
 
-        // --- STREAMING_CHUNK:History Table Logic ---
         window.renderHistoryTable = function() {
             const tbody = document.getElementById('historyTableBody');
             let theadTr = document.querySelector('#view-history table thead tr');
@@ -2302,9 +2285,74 @@
             } catch (err) {}
         };
 
-        // --- STREAMING_CHUNK:Indusco (Inventory) Tables ---
-        // --- ZARZĄDZANIE INDUSCO (WYDANIA) ---
+        window.remanentAdjustments = {};
+
+        window.updateRemanentAdjustments = function() {
+            window.remanentAdjustments = {};
+            const allPaints = window.getAllPossibleDailyPaints();
+            allPaints.forEach(paint => {
+                const parts = paint.split(' - '); 
+                if (parts.length < 2) return;
+                const qColor = parts.pop(); const qBrand = parts.join(' - ');
+
+                let events = [];
+                induscoHistory.forEach((r, idx) => {
+                    if (r.paintType === paint) {
+                        let isUtylizacja = r.actionType === 'utylizacja' || (r.amount < 0 && !r.isRemanent && r.actionType !== 'remanent'); 
+                        let isKorekta = r.isRemanent || r.actionType === 'remanent';
+                        events.push({ 
+                            dateObj: window.parsePlDate(r.date), 
+                            wydanie: (r.amount > 0 && !isKorekta) ? r.amount : 0, 
+                            utylizacja: isUtylizacja ? Math.abs(r.amount) : 0, 
+                            zuzycie: 0, 
+                            rodzaj: isKorekta ? 'REMANENT' : (isUtylizacja ? 'UTYLIZACJA' : 'WYDANIE'), 
+                            rawAmount: Math.abs(r.amount),
+                            induscoIndex: idx
+                        });
+                    }
+                });
+
+                printHistory.forEach(p => {
+                    if (p.isError) return;
+                    let pVol = 0; let bs = p.brandStats;
+                    if (bs && bs[qBrand]) { 
+                        if (qColor === 'Rozcieńczalnik') pVol = bs[qBrand].thinner || 0; 
+                        else if (bs[qBrand].colors && bs[qBrand].colors[qColor]) pVol = bs[qBrand].colors[qColor]; 
+                    }
+                    if (pVol > 0) {
+                        events.push({ 
+                            dateObj: window.parsePlDate(p.date), 
+                            wydanie: 0, utylizacja: 0, zuzycie: pVol, 
+                            rodzaj: 'ZUŻYCIE'
+                        });
+                    }
+                });
+
+                events.sort((a, b) => {
+                    if(a.dateObj.getTime() !== b.dateObj.getTime()) return a.dateObj - b.dateObj;
+                    const order = { 'WYDANIE': 0, 'UTYLIZACJA': 1, 'ZUŻYCIE': 2, 'REMANENT': 3 };
+                    const typeA = a.rodzaj.startsWith('ZUŻYCIE') ? 'ZUŻYCIE' : a.rodzaj;
+                    const typeB = b.rodzaj.startsWith('ZUŻYCIE') ? 'ZUŻYCIE' : b.rodzaj;
+                    return (order[typeA] || 0) - (order[typeB] || 0);
+                });
+                
+                let currentBalance = 0;
+                events.forEach(ev => {
+                    if (ev.rodzaj === 'REMANENT') {
+                        const korekta = ev.rawAmount - currentBalance;
+                        window.remanentAdjustments[ev.induscoIndex] = korekta;
+                        currentBalance = ev.rawAmount;
+                    } else { 
+                        currentBalance += ev.wydanie; 
+                        currentBalance -= ev.utylizacja; 
+                        currentBalance -= ev.zuzycie; 
+                    }
+                });
+            });
+        };
+
         window.renderInduscoTable = function() {
+            window.updateRemanentAdjustments();
             const tbody = document.getElementById('induscoTableBody');
             if (!tbody) return; tbody.innerHTML = '';
             const isAdmin = currentUser && currentUser.role === 'admin';
@@ -2343,10 +2391,21 @@
                     
                     if (row.isRemanent || row.actionType === 'remanent') {
                         typeDisplay += ` <span class="text-[9px] bg-yellow-300 text-black px-1 border border-black ml-2 font-bold uppercase">REMANENT</span>`;
-                        if (row.amount > 0) amountDisplay = "+" + amountDisplay; 
+                        
+                        const korekta = window.remanentAdjustments[i];
+                        if (korekta !== undefined) {
+                            // Remanent różnica wyliczona. Różnica = target - balance
+                            // Aby być spójnym z dziennym: jeśli target > balance, to na plus
+                            amountDisplay = (korekta > 0 ? "+" : "") + formatNumber(korekta, 2);
+                        } else {
+                            amountDisplay = formatNumber(Math.abs(row.amount), 2);
+                        }
+                        
                         akcjaDisplay = "REMANENT"; 
                         akcjaColor = "text-yellow-700"; 
                         trClass = "bg-yellow-50 hover:bg-yellow-100 transition-colors";
+                    } else if (row.amount < 0) {
+                        amountDisplay = formatNumber(Math.abs(row.amount), 2);
                     }
 
                     tbody.innerHTML += `
@@ -2378,7 +2437,7 @@
                 else if (isUtylizacja) actionEl.value = 'utylizacja';
                 else actionEl.value = 'wydanie';
             }
-            document.getElementById('editInduscoAmount').value = isRemanent ? record.amount : Math.abs(record.amount); 
+            document.getElementById('editInduscoAmount').value = Math.abs(record.amount); 
             document.getElementById('editInduscoModal').classList.remove('hidden'); document.getElementById('editInduscoModal').classList.add('flex');
         };
 
@@ -2388,28 +2447,17 @@
             const index = window.currentEditInduscoIndex;
             const dIso = document.getElementById('editInduscoDate').value, type = document.getElementById('editInduscoPaint').value, actionEl = document.getElementById('editInduscoAction');
             const actionType = actionEl ? actionEl.value : 'wydanie'; const amtStr = document.getElementById('editInduscoAmount').value; const amt = parseFloat(amtStr);
-            if (!dIso || !type || isNaN(amt) || amtStr.trim() === '') { await customAlert("Wypełnij poprawnie wszystkie pola wydania!"); return; }
+            if (!dIso || !type || isNaN(amt) || amtStr.trim() === '') { await customAlert("Wypełnij poprawnie wszystkie pola!"); return; }
 
-            const isRem = induscoHistory[index].isRemanent || actionType === 'remanent'; 
-            let finalAmt = amt;
-            
-            if (actionType === 'remanent') { 
-                finalAmt = amt; 
-                induscoHistory[index].isRemanent = true;
-            } else if (actionType === 'utylizacja') { 
-                finalAmt = -Math.abs(amt); 
-                induscoHistory[index].isRemanent = false;
-            } else { 
-                finalAmt = Math.abs(amt); 
-                induscoHistory[index].isRemanent = false;
-            }
+            let finalAmt = actionType === 'utylizacja' ? -Math.abs(amt) : Math.abs(amt);
+            let isRem = actionType === 'remanent';
 
             const currUserStr = currentUser ? (currentUser.name || currentUser.login) : "System";
             const editDateStr = new Date().toLocaleString('pl-PL', {day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit'});
             const editInfo = `<br><span class="text-[9px] text-gray-500 font-normal">[Edycja: ${currUserStr} ${editDateStr}]</span>`;
 
             induscoHistory[index].date = formatISOToPL(dIso); induscoHistory[index].paintType = type;
-            if (!isRem) induscoHistory[index].actionType = actionType;
+            induscoHistory[index].actionType = actionType; induscoHistory[index].isRemanent = isRem;
             induscoHistory[index].amount = finalAmt; induscoHistory[index].author = induscoHistory[index].author + editInfo;
 
             renderInduscoTable(); if (document.getElementById('view-daily') && document.getElementById('view-daily').classList.contains('block')) renderDailyLedger();
@@ -2435,13 +2483,9 @@
                 if (paintSelect && amountInput && actionSelect) {
                     const paintType = paintSelect.value, actionType = actionSelect.value, amount = parseFloat(amountInput.value);
                     if (paintType && !isNaN(amount)) {
-                        let finalAmount = amount;
-                        let isRem = false;
-                        if (actionType === 'utylizacja') { finalAmount = -Math.abs(amount); }
-                        else if (actionType === 'wydanie') { finalAmount = Math.abs(amount); }
-                        else if (actionType === 'remanent') { isRem = true; }
-                        
-                        induscoHistory.push({ paintType, amount: finalAmount, actionType, isRemanent: isRem, date: dateStr, author: currentUser ? (currentUser.name || currentUser.login) : "Nieznany" });
+                        let finalAmount = actionType === 'utylizacja' ? -Math.abs(amount) : Math.abs(amount);
+                        let isRem = actionType === 'remanent';
+                        induscoHistory.push({ paintType, amount: finalAmount, actionType: actionType, isRemanent: isRem, date: dateStr, author: currentUser ? (currentUser.name || currentUser.login) : "Nieznany" });
                         addedCount++;
                     }
                 }
@@ -2451,7 +2495,7 @@
                 renderInduscoTable(); if (document.getElementById('view-daily') && document.getElementById('view-daily').classList.contains('block')) renderDailyLedger();
                 autoSaveToDisk(); await customAlert(`Pomyślnie zapisano ${addedCount} pozycji.`);
                 document.getElementById('induscoBulkRows').innerHTML = ''; window.addInduscoBulkRow(); 
-            } else await customAlert("Brak poprawnych ilości w dodanych wierszach.");
+            } else await customAlert("Nie dodano żadnych wpisów. Upewnij się, że wpisane ilości są prawidłowe.");
         };
 
         window.removeInduscoRecord = async function(index) {
@@ -2461,79 +2505,6 @@
             else if (pin !== null) await customAlert("Nieprawidłowy kod PIN.");
         };
 
-        // --- STREAMING_CHUNK:Database List Management ---
-        window.filterDbTable = function() { window.renderDbTable(); };
-
-        window.updateDbMultiplier = async function(cat, key, value) {
-            const cleanValue = value.replace(/[\s\u00A0]/g, '').replace(',', '.');
-            const num = parseFloat(cleanValue);
-            if (!isNaN(num) && num > 0) {
-                database[cat][key] = num;
-                window.updateProfilSelect(); window.calculate();
-            } else {
-                await customAlert("Podana wartość musi być liczbą większą od zera.");
-                window.renderDbTable();
-            }
-        };
-
-        window.renderDbTable = function() {
-            const previewSection = document.getElementById('dbPreviewSection');
-            const tbody = document.getElementById('dbTableBody');
-            const countBadge = document.getElementById('dbCountBadge');
-            const searchInput = document.getElementById('dbSearchInput');
-            const query = searchInput ? searchInput.value.toLowerCase() : "";
-            
-            tbody.innerHTML = '';
-            let totalCount = 0; let totalInDb = 0;
-            
-            for (const cat in database) {
-                if (cat === 'Płaskowniki FB') continue; 
-                const keys = Object.keys(database[cat]).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
-                totalInDb += keys.length;
-                if (keys.length === 0) continue;
-                
-                const filteredKeys = keys.filter(k => k.toLowerCase().includes(query));
-                if (filteredKeys.length === 0) continue;
-                
-                const headerTr = document.createElement('tr');
-                headerTr.innerHTML = `<td colspan="2" class="font-bold uppercase tracking-wider text-[11px] bg-gray-100 text-black px-3 py-2 border-b border-black">${cat}</td>`;
-                tbody.appendChild(headerTr);
-                
-                filteredKeys.forEach(key => {
-                    totalCount++;
-                    const tr = document.createElement('tr');
-                    tr.className = "hover:bg-gray-100 transition-colors";
-                    tr.innerHTML = `
-                        <td class="pl-6 font-bold text-black px-3 py-1.5 border-b border-gray-300">${key}</td>
-                        <td class="text-right px-3 py-1.5 border-b border-gray-300">
-                            <input type="text" value="${window.formatNumber(database[cat][key], 4)}" 
-                                onchange="updateDbMultiplier('${cat}', '${key}', this.value)" class="w-24 text-right bg-transparent focus:bg-white border border-transparent hover:border-black focus:border-black outline-none text-black font-bold px-1 py-0.5 transition-all">
-                        </td>
-                    `;
-                    tbody.appendChild(tr);
-                });
-            }
-            countBadge.textContent = totalCount;
-            if (totalInDb > 0) { previewSection.classList.remove('hidden'); previewSection.classList.add('flex'); } 
-            else { previewSection.classList.add('hidden'); previewSection.classList.remove('flex'); }
-            window.updateProfilSelect();
-
-            const dlProfile = document.getElementById('dl-profile');
-            if (dlProfile) {
-                dlProfile.innerHTML = '';
-                for (const cat in database) {
-                    if (cat === 'Płaskowniki FB') continue; 
-                    Object.keys(database[cat]).forEach(k => {
-                        const opt = document.createElement('option');
-                        opt.value = k;
-                        dlProfile.appendChild(opt);
-                    });
-                }
-            }
-        };
-
-        // --- STREAMING_CHUNK:Daily Ledger Rendering ---
-        // --- ROZLICZENIE DZIENNE ---
         let currentDailyPaint = null;
         
         window.getAllPossibleDailyPaints = function() {
@@ -2653,12 +2624,19 @@
                 if (pVol > 0) events.push({ dateObj: window.parsePlDate(p.date), jednostka: p.projectName || p.unit || '-', wydanie: 0, utylizacja: 0, zuzycie: pVol, m2: p.area || 0, rodzaj: rodzajDisplay, kalkulacja: p.protocolNumber || '-', akcje: `<button onclick="loadHistoryItem('${p.id}')" class="text-[10px] font-bold bg-[#6466f1] text-white border border-black px-2 py-1 uppercase hover:bg-blue-800 print-hide">PODGLĄD</button>`, _rawId: 'pr_' + p.id });
             });
 
-            events.sort((a, b) => a.dateObj - b.dateObj);
+            events.sort((a, b) => {
+                if(a.dateObj.getTime() !== b.dateObj.getTime()) return a.dateObj - b.dateObj;
+                const order = { 'WYDANIE': 0, 'UTYLIZACJA': 1, 'ZUŻYCIE': 2, 'REMANENT': 3 };
+                const typeA = a.rodzaj.startsWith('ZUŻYCIE') ? 'ZUŻYCIE' : a.rodzaj;
+                const typeB = b.rodzaj.startsWith('ZUŻYCIE') ? 'ZUŻYCIE' : b.rodzaj;
+                return (order[typeA] || 0) - (order[typeB] || 0);
+            });
+            
             let currentBalance = 0;
             events.forEach(ev => {
                 if (ev.rodzaj === 'REMANENT') {
-                    /* Logika korygująca zużycie na podstawie faktycznego remanentu */
-                    ev.zuzycieKorekta = currentBalance - ev.rawAmount;
+                    const diff = ev.rawAmount - currentBalance;
+                    ev.zuzycieKorekta = -diff; 
                     currentBalance = ev.rawAmount;
                 } else { 
                     currentBalance += ev.wydanie; 
@@ -2675,27 +2653,118 @@
             if (filteredEvents.length === 0) { tbody.innerHTML = `<tr><td colspan="10" class="p-6 font-bold uppercase text-gray-500 text-center">Brak zapisanych działań dla wybranej farby.</td></tr>`; tfoot.innerHTML = ''; return; }
 
             filteredEvents.forEach(ev => {
-                let valDostawa = ev.wydanie;
-                let valUtyl = ev.utylizacja;
                 let valZuzycie = ev.zuzycie;
+                if (ev.rodzaj === 'REMANENT') valZuzycie = ev.zuzycieKorekta;
 
                 if (ev.rodzaj === 'REMANENT') {
-                    valZuzycie = ev.zuzycieKorekta;
+                    sumZuzycie += valZuzycie; 
+                } else {
+                    sumDostawa += ev.wydanie; 
+                    sumUtylizacja += ev.utylizacja; 
+                    sumZuzycie += ev.zuzycie; 
                 }
-
-                sumDostawa += valDostawa; 
-                sumUtylizacja += valUtyl; 
-                sumZuzycie += valZuzycie; 
                 sumM2 += ev.m2;
                 
-                let textColorDostawa = "text-green-700"; 
-                let textColorUtyl = "text-red-600";
-                let textColorZuzycie = ev.rodzaj === 'REMANENT' ? "text-yellow-700" : "text-black";
+                let zuzycieClass = "text-black";
+                let zuzycieText = "";
+                if (ev.rodzaj === 'REMANENT') {
+                    zuzycieClass = valZuzycie > 0 ? "text-red-600" : "text-green-700";
+                    zuzycieText = (valZuzycie > 0 ? "+" : "") + window.formatNumber(valZuzycie);
+                } else if (valZuzycie > 0) {
+                    zuzycieClass = "text-blue-700";
+                    zuzycieText = window.formatNumber(valZuzycie);
+                }
 
-                tbody.innerHTML += `<tr class="hover:bg-gray-50"><td class="px-2 py-2 border-r border-b border-black font-bold text-black">${window.formatISOToPL(window.dateToISO(ev.dateObj))}</td><td class="px-2 py-2 border-r border-b border-black font-bold uppercase">${ev.jednostka}</td><td class="px-2 py-2 border-r border-b border-black ${textColorDostawa} font-bold">${valDostawa !== 0 ? window.formatNumber(valDostawa) : ''}</td><td class="px-2 py-2 border-r border-b border-black ${textColorUtyl} font-bold">${valUtyl !== 0 ? window.formatNumber(valUtyl) : ''}</td><td class="px-2 py-2 border-r border-b border-black font-bold ${textColorZuzycie}">${valZuzycie !== 0 ? window.formatNumber(valZuzycie) : (ev.rodzaj === 'REMANENT' ? '0,00' : '')}</td><td class="px-2 py-2 border-r border-b border-black font-bold bg-yellow-50 text-black text-sm">${window.formatNumber(ev.pozostalo)}</td><td class="px-2 py-2 border-r border-b border-black text-blue-700 font-bold">${ev.m2 > 0 ? window.formatNumber(ev.m2) : ''}</td><td class="px-2 py-2 border-r border-b border-black text-gray-700 font-bold uppercase text-[10px]">${ev.rodzaj}</td><td class="px-2 py-2 border-r border-b border-black text-gray-700 font-bold text-[10px] uppercase">${ev.kalkulacja}</td><td class="px-2 py-2 border-b border-black text-center print-hide">${ev.akcje}</td></tr>`;
+                tbody.innerHTML += `<tr class="hover:bg-gray-50">
+                    <td class="px-2 py-2 border-r border-b border-black font-bold text-black">${window.formatISOToPL(window.dateToISO(ev.dateObj))}</td>
+                    <td class="px-2 py-2 border-r border-b border-black font-bold uppercase">${ev.jednostka}</td>
+                    <td class="px-2 py-2 border-r border-b border-black text-green-700 font-bold">${ev.wydanie > 0 ? window.formatNumber(ev.wydanie) : ''}</td>
+                    <td class="px-2 py-2 border-r border-b border-black text-red-600 font-bold">${ev.utylizacja > 0 ? window.formatNumber(ev.utylizacja) : ''}</td>
+                    <td class="px-2 py-2 border-r border-b border-black font-bold ${zuzycieClass}">${zuzycieText}</td>
+                    <td class="px-2 py-2 border-r border-b border-black font-bold bg-yellow-50 text-black text-sm">${window.formatNumber(ev.pozostalo)}</td>
+                    <td class="px-2 py-2 border-r border-b border-black text-blue-700 font-bold">${ev.m2 > 0 ? window.formatNumber(ev.m2) : ''}</td>
+                    <td class="px-2 py-2 border-r border-b border-black text-gray-700 font-bold uppercase text-[10px]">${ev.rodzaj}</td>
+                    <td class="px-2 py-2 border-r border-b border-black text-gray-700 font-bold text-[10px] uppercase">${ev.kalkulacja}</td>
+                    <td class="px-2 py-2 border-b border-black text-center print-hide">${ev.akcje}</td>
+                </tr>`;
             });
 
-            tfoot.innerHTML = `<tr><td colspan="2" class="px-2 py-3 border-r border-black text-right uppercase text-black font-bold bg-gray-200">SUMA WIDOCZNYCH:</td><td class="px-2 py-3 border-r border-black text-green-700 font-bold text-sm bg-gray-200">${window.formatNumber(sumDostawa)}</td><td class="px-2 py-3 border-r border-black text-red-600 font-bold text-sm bg-gray-200">${window.formatNumber(sumUtylizacja)}</td><td class="px-2 py-3 border-r border-black font-bold text-sm bg-gray-200">${window.formatNumber(sumZuzycie)}</td><td class="px-2 py-3 border-r border-black font-bold bg-yellow-100 text-black text-sm">${window.formatNumber(filteredEvents[filteredEvents.length-1].pozostalo)}</td><td class="px-2 py-3 border-r border-black text-blue-700 font-bold text-sm bg-gray-200">${window.formatNumber(sumM2)}</td><td colspan="3" class="px-2 py-3 bg-gray-200 border-black print-hide"></td></tr>`;
+            tfoot.innerHTML = `<tr><td colspan="2" class="px-2 py-3 border-r border-black text-right uppercase text-black font-bold bg-gray-200">SUMA WIDOCZNYCH:</td><td class="px-2 py-3 border-r border-black text-green-700 font-bold text-sm bg-gray-200">${window.formatNumber(sumDostawa)}</td><td class="px-2 py-3 border-r border-black text-red-600 font-bold text-sm bg-gray-200">${window.formatNumber(sumUtylizacja)}</td><td class="px-2 py-3 border-r border-black font-bold text-sm bg-gray-200 text-blue-700">${window.formatNumber(sumZuzycie)}</td><td class="px-2 py-3 border-r border-black font-bold bg-yellow-100 text-black text-sm">${window.formatNumber(filteredEvents[filteredEvents.length-1].pozostalo)}</td><td class="px-2 py-3 border-r border-black text-blue-700 font-bold text-sm bg-gray-200">${window.formatNumber(sumM2)}</td><td colspan="3" class="px-2 py-3 bg-gray-200 border-black print-hide"></td></tr>`;
+        };
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            try {
+                document.getElementById('induscoDate').valueAsDate = new Date();
+                document.getElementById('protocolDateInput').valueAsDate = new Date(); 
+                initGatunkiSelect(); renderColorsTable(); renderDbTable(); renderPaintTypesTable();
+                updatePaintDropdowns(); renderHistoryTable(); renderUsersTable(); renderProjectsList();
+                renderInduscoTable(); addInduscoBulkRow(); toggleFormFields(); 
+            } catch (e) { console.error("Błąd inicjalizacji: ", e); }
+
+            if (!USE_FIREBASE) {
+                let autoLoaded = false;
+                try {
+                    const response = await fetch('./Status/status.json', { cache: "no-store" });
+                    if (response.ok) {
+                        const text = await response.text();
+                        if (text && text !== "null") { await applyProjectData(text, true); autoLoaded = true; }
+                    }
+                } catch (err) {}
+                if (!autoLoaded) {
+                    document.getElementById('mainAppContainer').classList.add('locked-ui');
+                    const initialOverlay = document.getElementById('initialLoadOverlay');
+                    if (initialOverlay) { initialOverlay.classList.remove('hidden'); initialOverlay.classList.add('flex'); }
+                }
+            } else { document.getElementById('mainAppContainer').classList.add('locked-ui'); }
+        });
+
+        window.cancelEditMode = function() {
+            window.editingProtocolId = null;
+            const saveBtn = document.getElementById('btnSaveToSummary');
+            if (saveBtn) {
+                saveBtn.innerHTML = 'Zapisz do Zestawienia';
+                if (inputData.length > 0 && !isPreviewMode) {
+                    saveBtn.className = "bg-green-600 text-white border border-black hover:bg-green-700 px-6 py-2 text-sm font-bold transition flex items-center gap-1.5 uppercase shadow-md";
+                } else {
+                    saveBtn.className = "bg-black text-white border border-black hover:bg-gray-800 px-6 py-2 text-sm font-bold transition flex items-center gap-1.5 uppercase shadow-md";
+                }
+            }
+        };
+
+        window.addEventListener('beforeprint', () => {
+            const dateStr = new Date().toLocaleDateString('pl-PL');
+            document.querySelectorAll('.print-history-only .print-date').forEach(el => el.textContent = dateStr);
+        });
+
+        window.updatePrintHeaders = function(newProtocolNum = null) {
+            let projName = document.getElementById('formJednostka') ? document.getElementById('formJednostka').value.trim() : "";
+            if (!projName && inputData.length > 0 && inputData[0].Jednostka) projName = inputData[0].Jednostka;
+            document.querySelectorAll('.print-project-name').forEach(el => el.textContent = projName || "-");
+
+            let protNumStr = "[ NR: SZKIC (NIEZAPISANY) ]";
+            if (newProtocolNum) {
+                protNumStr = `[ NR: ${newProtocolNum} ]`;
+            } else if (isPreviewMode && currentPreviewProtocolNumber) {
+                protNumStr = `[ NR: ${currentPreviewProtocolNumber} ]`;
+            }
+            
+            document.querySelectorAll('.print-protocol-number').forEach(el => {
+                el.textContent = protNumStr;
+                if(protNumStr.includes("SZKIC")) el.classList.add("text-gray-500", "italic");
+                else el.classList.remove("text-gray-500", "italic");
+            });
+        };
+
+        window.resetProtocolCounter = async function() {
+            if (!currentUser || currentUser.role !== 'admin') { await customAlert("Brak uprawnień administratora."); return; }
+            const pin = await customPrompt("Podaj kod autoryzacji (PIN), aby zresetować licznik numeracji kalkulacji (od 1):", 'password');
+            if (pin === "4321") {
+                if (await customConfirm("UWAGA! Numery kolejnych kalkulacji zaczną się ponownie od początku. Czy na pewno chcesz wyzerować licznik?")) {
+                    protocolCounter = 0; autoSaveToDisk();
+                    await customAlert("Licznik kalkulacji został wyzerowany. Kolejna będzie miała nr 1.");
+                    updatePrintHeaders();
+                }
+            } else if (pin !== null) await customAlert("Nieprawidłowy kod PIN.");
         };
     </script>
 </body>
