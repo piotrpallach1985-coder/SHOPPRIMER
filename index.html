@@ -1504,9 +1504,21 @@
             if(!tbody) return;
             tbody.innerHTML = '';
             paintTypes.forEach(pt => {
+                let fallbacksHtml = '';
+                if (pt.fallbacks && Object.keys(pt.fallbacks).length > 0) {
+                    fallbacksHtml = '<div class="mt-1 space-y-0.5">';
+                    for (const [color, targetId] of Object.entries(pt.fallbacks)) {
+                        fallbacksHtml += `<div class="text-[9px] font-normal normal-case bg-gray-100 text-gray-800 border border-gray-300 px-1 py-0.5 w-max">Gdy kolor <b>${color}</b> → użyj <b>${targetId}</b></div>`;
+                    }
+                    fallbacksHtml += '</div>';
+                }
+
                 tbody.innerHTML += `
                     <tr class="hover:bg-gray-50 border-b border-gray-300">
-                        <td class="px-3 py-1.5 border-r border-black font-bold text-black uppercase">${pt.name}</td>
+                        <td class="px-3 py-1.5 border-r border-black text-black align-top">
+                            <div class="font-bold uppercase">${pt.name}</div>
+                            ${fallbacksHtml}
+                        </td>
                         <td class="px-3 py-1.5 border-r border-black text-center">
                             <input type="number" step="0.1" min="0.1" value="${pt.yieldBlachy}" oninput="updatePaintParam('${pt.id}', 'yieldBlachy', this.value)" class="w-20 text-center border border-transparent hover:border-black focus:border-black outline-none bg-transparent focus:bg-white font-bold text-black px-1 py-0.5 transition-all">
                         </td>
@@ -1628,6 +1640,7 @@
             });
             
             window.closePaintRulesModal();
+            window.renderPaintTypesTable();
             window.calculate(); 
             window.autoSaveToDisk();
         };
@@ -1635,10 +1648,10 @@
         window.getInduscoPaintsHtml = function() {
             return paintTypes.map(pt => `
                 <optgroup label="${pt.name}">
-                    <option value="${pt.id} - Szary">Szary</option>
-                    <option value="${pt.id} - Czerwony">Czerwony</option>
-                    <option value="${pt.id} - Zielony">Zielony</option>
-                    <option value="${pt.id} - Rozcieńczalnik">Rozcieńczalnik</option>
+                    <option value="${pt.id} - Szary">${pt.name} - Szary</option>
+                    <option value="${pt.id} - Czerwony">${pt.name} - Czerwony</option>
+                    <option value="${pt.id} - Zielony">${pt.name} - Zielony</option>
+                    <option value="${pt.id} - Rozcieńczalnik">${pt.name} - Rozcieńczalnik</option>
                 </optgroup>
             `).join('');
         };
