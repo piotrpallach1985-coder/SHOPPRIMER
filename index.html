@@ -30,9 +30,9 @@
             @page { size: A4 landscape; margin: 10mm; }
             body { background-color: white !important; font-size: 10pt !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             
-            header, .print-hide, #tab-daily, #tab-calc, #tab-costs, #tab-db, #tab-colors, #tab-history, #tab-users, #tab-projects, #tab-indusco, #loginOverlay, #initialLoadOverlay, #editInduscoModal, #customDialogOverlay, #configDailyPaintsModal, #paintRulesModal { display: none !important; }
+            header, .print-hide, #tab-daily, #tab-calc, #tab-costs, #tab-db, #tab-colors, #tab-history, #tab-users, #tab-projects, #tab-archive, #tab-indusco, #loginOverlay, #initialLoadOverlay, #editInduscoModal, #customDialogOverlay, #configDailyPaintsModal, #paintRulesModal { display: none !important; }
             
-            body.print-daily #view-calc, body.print-daily #view-costs, body.print-daily #view-history, body.print-daily #view-indusco, body.print-daily #view-db, body.print-daily #view-colors, body.print-daily #view-users, body.print-daily #view-projects { display: none !important; }
+            body.print-daily #view-calc, body.print-daily #view-costs, body.print-daily #view-history, body.print-daily #view-indusco, body.print-daily #view-db, body.print-daily #view-colors, body.print-daily #view-users, body.print-daily #view-projects, body.print-daily #view-archive { display: none !important; }
             body.print-daily #view-daily { display: block !important; border: none !important; margin-top: 0 !important; }
             body.print-daily #view-daily .print-hide { display: none !important; }
             body.print-daily #dailyPaintSidebarWrapper { display: none !important; }
@@ -41,7 +41,7 @@
             
             #view-calc, #view-costs { display: block !important; border: none !important; }
             #view-calc > div:first-child, #view-costs > div:first-child { display: none !important; }
-            #view-db, #view-colors, #view-history, #view-users, #view-projects, #view-indusco, #view-daily { display: none !important; }
+            #view-db, #view-colors, #view-history, #view-users, #view-projects, #view-indusco, #view-archive, #view-daily { display: none !important; }
             #resultsSection { display: flex !important; border: none !important; margin-top: 0 !important; }
             
             body.print-history #view-calc, body.print-history #view-costs { display: none !important; }
@@ -171,7 +171,7 @@
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-black mb-1 uppercase">Ilość [L]</label>
-                    <input type="number" id="editInduscoAmount" step="0.1" class="w-full border border-black p-1.5 text-sm outline-none bg-white">
+                    <input type="number" id="editInduscoAmount" step="0.1" min="0" class="w-full border border-black p-1.5 text-sm outline-none bg-white">
                 </div>
             </div>
             <div class="flex justify-end gap-3 shrink-0">
@@ -219,7 +219,6 @@
                 </h1>
             </div>
             <div class="flex flex-wrap gap-2 print-hide">
-                <!-- Usunięto zduplikowane przyciski Zapisz/Wczytaj -->
                 <button onclick="handleLogout()" class="bg-white border border-red-600 text-red-600 hover:bg-red-600 hover:text-white px-3 py-2 text-xs font-bold transition flex items-center gap-1.5 uppercase ml-2">
                     WYLOGUJ
                 </button>
@@ -260,8 +259,11 @@
                     <button id="tab-costs" onclick="switchTab('costs'); toggleMoreTabs(false)" class="px-3 py-2 text-left hover:bg-gray-200 text-black text-xs font-bold focus:outline-none whitespace-nowrap border-b border-gray-200">
                         WYDAJNOŚĆ
                     </button>
-                    <button id="tab-users" onclick="switchTab('users'); toggleMoreTabs(false)" class="px-3 py-2 text-left hover:bg-gray-200 text-black text-xs font-bold focus:outline-none whitespace-nowrap">
+                    <button id="tab-users" onclick="switchTab('users'); toggleMoreTabs(false)" class="px-3 py-2 text-left hover:bg-gray-200 text-black text-xs font-bold focus:outline-none whitespace-nowrap border-b border-gray-200">
                         USTAWIENIA
+                    </button>
+                    <button id="tab-archive" onclick="switchTab('archive'); toggleMoreTabs(false)" class="px-3 py-2 text-left hover:bg-gray-200 text-black text-xs font-bold focus:outline-none whitespace-nowrap">
+                        ARCHIWUM
                     </button>
                 </div>
             </div>
@@ -531,7 +533,7 @@
         <div id="view-indusco" class="space-y-4 hidden mt-4">
             <div class="bg-white p-4 border border-black print-hide">
                 <div class="flex justify-between border-b border-black pb-2 mb-3">
-                    <h2 class="text-sm font-bold text-black uppercase">Księgowanie Wydania / Utylizacji</h2>
+                    <h2 class="text-sm font-bold text-black uppercase">Księgowanie Wydania / Utylizacji / Remanentu</h2>
                 </div>
                 <div class="mb-3 w-full sm:w-48">
                     <label class="block text-xs font-bold text-black mb-1 uppercase">Data zdarzenia</label>
@@ -546,7 +548,7 @@
             
             <div class="bg-white border border-black print-hide mt-4">
                 <div class="p-3 border-b border-black flex flex-col sm:flex-row justify-between items-center bg-white gap-3">
-                    <h2 class="text-sm font-bold text-black uppercase">Historia magazynowa (wydania/utylizacje/korekty)</h2>
+                    <h2 class="text-sm font-bold text-black uppercase">Historia magazynowa (wydania/utylizacje/remanenty)</h2>
                 </div>
                 <div class="p-3 grid grid-cols-1 md:grid-cols-3 gap-3 bg-white">
                     <div>
@@ -599,10 +601,29 @@
                         <thead class="bg-gray-100 text-black font-bold uppercase border-b border-black">
                             <tr>
                                 <th class="px-3 py-2 border-r border-black">Projekt</th>
-                                <th class="px-3 py-2 text-center w-16">Akcja</th>
+                                <th class="px-3 py-2 text-center w-32">Akcja</th>
                             </tr>
                         </thead>
                         <tbody id="projectsTableBody" class="divide-y divide-black bg-white"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- WIDOK: ARCHIWUM -->
+        <div id="view-archive" class="space-y-4 hidden mt-4">
+            <div class="bg-gray-50 p-4 border border-black print-hide">
+                <h2 class="text-sm font-bold text-gray-700 mb-3 border-b border-gray-400 pb-1 uppercase">Zarchiwizowane Projekty</h2>
+                <div class="text-xs text-gray-600 mb-4">Poniższe projekty są ukryte z głównych list. Możesz je w każdej chwili przywrócić.</div>
+                <div class="mt-4 overflow-x-auto">
+                    <table class="w-full max-w-sm text-left text-xs whitespace-nowrap border border-gray-400">
+                        <thead class="bg-gray-200 text-gray-700 font-bold uppercase border-b border-gray-400">
+                            <tr>
+                                <th class="px-3 py-2 border-r border-gray-400">Projekt</th>
+                                <th class="px-3 py-2 text-center w-24">Akcja</th>
+                            </tr>
+                        </thead>
+                        <tbody id="archiveTableBody" class="divide-y divide-gray-400 bg-white text-gray-600"></tbody>
                     </table>
                 </div>
             </div>
@@ -863,7 +884,6 @@
         initAuth();
     </script>
 
-    <!-- GŁÓWNY SKRYPT APLIKACJI -->
     <script>
         const USE_FIREBASE = true;
 
@@ -882,6 +902,7 @@
         let printHistory = [];
         let filteredHistory = [];
         let projectsList = [];
+        let archivedProjectsList = [];
         let induscoHistory = [];
         let database = {}; 
         let visibleDailyPaints = null;
@@ -1040,6 +1061,7 @@
                 isMm: true,
                 appUsers: appUsers,
                 projectsList: projectsList,
+                archivedProjectsList: archivedProjectsList,
                 database: database, 
                 inputData: inputData, 
                 printHistory: printHistory,
@@ -1203,6 +1225,7 @@
                 }
 
                 if (projectData.projectsList) projectsList = projectData.projectsList;
+                if (projectData.archivedProjectsList) archivedProjectsList = projectData.archivedProjectsList;
                 if (projectData.induscoHistory) induscoHistory = projectData.induscoHistory;
 
                 if (projectData.appUsers) {
@@ -1249,9 +1272,8 @@
                 if (projectData.paintTypes) {
                     paintTypes = projectData.paintTypes;
                     paintTypes = paintTypes.filter(p => p.id !== 'INNY');
-                    paintTypes.forEach(p => { if (!p.fallbacks) p.fallbacks = {}; }); // Inicjalizacja pustych reguł dla starych zapisów
+                    paintTypes.forEach(p => { if (!p.fallbacks) p.fallbacks = {}; });
                     
-                    // Bezpieczna migracja starego zapisu Interplate -> Sigmaweld dla Zielonego
                     let ip = paintTypes.find(p => p.id === 'INTERPLATE');
                     if (ip && !ip.fallbacks['Zielony'] && paintTypes.find(p => p.id === 'SIGMAWELD')) {
                         ip.fallbacks['Zielony'] = 'SIGMAWELD';
@@ -1269,7 +1291,7 @@
                 document.getElementById('costProfile').value = laborCosts.profile;
                 
                 renderDbTable(); renderPaintTypesTable(); updatePaintDropdowns();
-                renderHistoryTable(); renderUsersTable(); renderProjectsList(); 
+                renderHistoryTable(); renderUsersTable(); renderProjectsList(); renderArchiveList();
                 renderInduscoTable(); updateProfilSelect(); calculate();
 
                 const initialOverlay = document.getElementById('initialLoadOverlay');
@@ -1311,8 +1333,8 @@
         });
 
         window.switchTab = function(tabId) {
-            const views = ['daily', 'calc', 'db', 'colors', 'costs', 'history', 'users', 'projects', 'indusco'];
-            const dropdownTabs = ['db', 'colors', 'costs', 'users'];
+            const views = ['daily', 'calc', 'db', 'colors', 'costs', 'history', 'users', 'projects', 'indusco', 'archive'];
+            const dropdownTabs = ['db', 'colors', 'costs', 'users', 'archive'];
             
             views.forEach(v => {
                 const el = document.getElementById('view-' + v);
@@ -1323,7 +1345,7 @@
                         btn.className = "px-2 py-1.5 border-2 border-transparent hover:border-black border-b-0 text-black bg-white text-xs font-bold focus:outline-none whitespace-nowrap z-10";
                     } else {
                         btn.className = "px-3 py-2 text-left hover:bg-gray-200 text-black text-xs font-bold focus:outline-none whitespace-nowrap border-b border-gray-200";
-                        if (v === 'users') btn.classList.remove('border-b', 'border-gray-200');
+                        if (v === 'archive') btn.classList.remove('border-b', 'border-gray-200');
                     }
                 }
             });
@@ -1340,7 +1362,7 @@
                     if (btnMoreTabs) btnMoreTabs.classList.remove('bg-gray-200');
                 } else {
                     targetBtn.className = "px-3 py-2 text-left bg-gray-200 text-black text-xs font-bold focus:outline-none whitespace-nowrap border-b border-gray-200";
-                    if (tabId === 'users') targetBtn.classList.remove('border-b', 'border-gray-200');
+                    if (tabId === 'archive') targetBtn.classList.remove('border-b', 'border-gray-200');
                     if (btnMoreTabs) btnMoreTabs.classList.add('bg-gray-200');
                 }
             }
@@ -1407,7 +1429,10 @@
                         <tr class="hover:bg-gray-100 transition-colors">
                             <td class="px-3 py-2 border-r border-black font-bold text-black uppercase">${p}</td>
                             <td class="px-3 py-2 text-center">
-                                <button onclick="removeProject(${i})" class="text-black font-bold uppercase text-xs border border-black px-2 py-0.5 hover:bg-black hover:text-white bg-white">Usuń</button>
+                                <div class="flex gap-1 justify-center">
+                                    <button onclick="archiveProject(${i})" class="text-black font-bold uppercase text-[10px] border border-black px-2 py-0.5 hover:bg-black hover:text-white bg-white">Archiwizuj</button>
+                                    <button onclick="removeProject(${i})" class="text-black font-bold uppercase text-[10px] border border-black px-2 py-0.5 hover:bg-black hover:text-white bg-white">Usuń</button>
+                                </div>
                             </td>
                         </tr>
                     `;
@@ -1435,16 +1460,57 @@
         window.addProject = async function() {
             const val = document.getElementById('formNewProjectName').value.trim().toUpperCase();
             if (!val) return;
-            if (!projectsList.includes(val)) {
+            const isArchived = archivedProjectsList.some(p => (typeof p === 'object' ? p.name : p) === val);
+            if (!projectsList.includes(val) && !isArchived) {
                 projectsList.push(val);
                 document.getElementById('formNewProjectName').value = '';
                 renderProjectsList(); renderInduscoTable(); autoSaveToDisk();
-            } else { await customAlert('Projekt już istnieje na liście!'); }
+            } else { await customAlert('Projekt już istnieje na liście (lub w archiwum)!'); }
         };
 
         window.removeProject = async function(index) {
-            if(await customConfirm("Czy jesteś pewien, że chcesz usunąć ten projekt z listy? (Nie usunie to istniejących już obliczeń)")) {
+            if(await customConfirm("Czy jesteś pewien, że chcesz trwale usunąć ten projekt z listy?")) {
                 projectsList.splice(index, 1); renderProjectsList(); renderInduscoTable(); autoSaveToDisk();
+            }
+        };
+
+        window.renderArchiveList = function() {
+            const tbody = document.getElementById('archiveTableBody');
+            if(tbody) {
+                tbody.innerHTML = '';
+                if (archivedProjectsList.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="2" class="px-3 py-2 text-center font-bold text-gray-500 uppercase">Brak zarchiwizowanych projektów.</td></tr>`;
+                } else {
+                    archivedProjectsList.forEach((p, i) => {
+                        let pName = typeof p === 'object' ? p.name : p;
+                        let pDate = typeof p === 'object' && p.date ? ` <span class="text-[10px] text-gray-500 font-normal ml-2 normal-case">(Zarchiwizowano: ${p.date})</span>` : '';
+                        tbody.innerHTML += `
+                            <tr class="hover:bg-gray-200 transition-colors">
+                                <td class="px-3 py-2 border-r border-gray-400 font-bold uppercase text-gray-700">${pName}${pDate}</td>
+                                <td class="px-3 py-2 text-center">
+                                    <button onclick="unarchiveProject(${i})" class="text-black font-bold uppercase text-[10px] border border-black px-2 py-0.5 hover:bg-black hover:text-white bg-white shadow-sm">Przywróć</button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                }
+            }
+        };
+
+        window.archiveProject = async function(index) {
+            if(await customConfirm("Czy chcesz przenieść ten projekt do archiwum? Zniknie on z głównych list wyboru projektu.")) {
+                archivedProjectsList.push({ name: projectsList[index], date: new Date().toLocaleDateString('pl-PL') });
+                projectsList.splice(index, 1);
+                renderProjectsList(); renderArchiveList(); renderInduscoTable(); autoSaveToDisk();
+            }
+        };
+
+        window.unarchiveProject = async function(index) {
+            if(await customConfirm("Czy chcesz przywrócić ten projekt do aktywnych? Znów pojawi się na liście wyboru.")) {
+                let pName = typeof archivedProjectsList[index] === 'object' ? archivedProjectsList[index].name : archivedProjectsList[index];
+                projectsList.push(pName);
+                archivedProjectsList.splice(index, 1);
+                renderProjectsList(); renderArchiveList(); renderInduscoTable(); autoSaveToDisk();
             }
         };
 
@@ -1559,6 +1625,14 @@
             if(paintTypes.find(p => p.id === name)) { await customAlert('Farba już istnieje!'); return; }
             
             paintTypes.push({ id: name, name: name, yieldBlachy: 10.0, yieldProfile: 6.5, thinnerPct: 14, fallbacks: {} });
+            
+            if (visibleDailyPaints !== null) {
+                visibleDailyPaints.push(`${name} - Szary`);
+                visibleDailyPaints.push(`${name} - Czerwony`);
+                visibleDailyPaints.push(`${name} - Zielony`);
+                visibleDailyPaints.push(`${name} - Rozcieńczalnik`);
+            }
+            
             document.getElementById('newPaintName').value = '';
             
             renderPaintTypesTable(); updatePaintDropdowns(); renderDailySidebar(); renderHistoryTable(); autoSaveToDisk();
@@ -1579,7 +1653,6 @@
             }
         };
 
-        // Modal Reguł Farb
         window.currentEditingPaintRules = null;
         
         window.openPaintRulesModal = function(id) {
@@ -1641,19 +1714,22 @@
             
             window.closePaintRulesModal();
             window.renderPaintTypesTable();
+            window.updatePaintDropdowns();
+            window.renderDailySidebar();
+            window.renderDailyLedger();
             window.calculate(); 
             window.autoSaveToDisk();
         };
 
         window.getInduscoPaintsHtml = function() {
-            return paintTypes.map(pt => `
-                <optgroup label="${pt.name}">
-                    <option value="${pt.id} - Szary">${pt.name} - Szary</option>
-                    <option value="${pt.id} - Czerwony">${pt.name} - Czerwony</option>
-                    <option value="${pt.id} - Zielony">${pt.name} - Zielony</option>
-                    <option value="${pt.id} - Rozcieńczalnik">${pt.name} - Rozcieńczalnik</option>
-                </optgroup>
-            `).join('');
+            return paintTypes.map(pt => {
+                let opts = '';
+                if (!pt.fallbacks || !pt.fallbacks['Szary']) opts += `<option value="${pt.id} - Szary">${pt.name} - Szary</option>`;
+                if (!pt.fallbacks || !pt.fallbacks['Czerwony']) opts += `<option value="${pt.id} - Czerwony">${pt.name} - Czerwony</option>`;
+                if (!pt.fallbacks || !pt.fallbacks['Zielony']) opts += `<option value="${pt.id} - Zielony">${pt.name} - Zielony</option>`;
+                opts += `<option value="${pt.id} - Rozcieńczalnik">${pt.name} - Rozcieńczalnik</option>`;
+                return `<optgroup label="${pt.name}">${opts}</optgroup>`;
+            }).join('');
         };
 
         window.updatePaintDropdowns = function() {
@@ -1682,104 +1758,12 @@
             });
         };
 
-        window.filterDbTable = function() { window.renderDbTable(); };
-
-        window.updateDbMultiplier = async function(cat, key, value) {
-            const cleanValue = value.replace(/[\s\u00A0]/g, '').replace(',', '.');
-            const num = parseFloat(cleanValue);
-            if (!isNaN(num) && num > 0) {
-                database[cat][key] = num;
-                window.updateProfilSelect(); window.calculate();
-            } else {
-                await customAlert("Podana wartość musi być liczbą większą od zera.");
-                window.renderDbTable();
-            }
-        };
-
-        window.renderDbTable = function() {
-            const previewSection = document.getElementById('dbPreviewSection');
-            const tbody = document.getElementById('dbTableBody');
-            const countBadge = document.getElementById('dbCountBadge');
-            const searchInput = document.getElementById('dbSearchInput');
-            const query = searchInput ? searchInput.value.toLowerCase() : "";
-            
-            tbody.innerHTML = '';
-            let totalCount = 0; let totalInDb = 0;
-            
-            for (const cat in database) {
-                if (cat === 'Płaskowniki FB') continue; 
-                const keys = Object.keys(database[cat]).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
-                totalInDb += keys.length;
-                if (keys.length === 0) continue;
-                
-                const filteredKeys = keys.filter(k => k.toLowerCase().includes(query));
-                if (filteredKeys.length === 0) continue;
-                
-                const headerTr = document.createElement('tr');
-                headerTr.innerHTML = `<td colspan="2" class="font-bold uppercase tracking-wider text-[11px] bg-gray-100 text-black px-3 py-2 border-b border-black">${cat}</td>`;
-                tbody.appendChild(headerTr);
-                
-                filteredKeys.forEach(key => {
-                    totalCount++;
-                    const tr = document.createElement('tr');
-                    tr.className = "hover:bg-gray-100 transition-colors";
-                    tr.innerHTML = `
-                        <td class="pl-6 font-bold text-black px-3 py-1.5 border-b border-gray-300">${key}</td>
-                        <td class="text-right px-3 py-1.5 border-b border-gray-300">
-                            <input type="text" value="${window.formatNumber(database[cat][key], 4)}" 
-                                onchange="updateDbMultiplier('${cat}', '${key}', this.value)" class="w-24 text-right bg-transparent focus:bg-white border border-transparent hover:border-black focus:border-black outline-none text-black font-bold px-1 py-0.5 transition-all">
-                        </td>
-                    `;
-                    tbody.appendChild(tr);
-                });
-            }
-            countBadge.textContent = totalCount;
-            if (totalInDb > 0) { previewSection.classList.remove('hidden'); previewSection.classList.add('flex'); } 
-            else { previewSection.classList.add('hidden'); previewSection.classList.remove('flex'); }
-            window.updateProfilSelect();
-
-            const dlProfile = document.getElementById('dl-profile');
-            if (dlProfile) {
-                dlProfile.innerHTML = '';
-                for (const cat in database) {
-                    if (cat === 'Płaskowniki FB') continue; 
-                    Object.keys(database[cat]).forEach(k => {
-                        const opt = document.createElement('option');
-                        opt.value = k;
-                        dlProfile.appendChild(opt);
-                    });
-                }
-            }
-        };
-
-        window.addManualDbItem = async function() {
-            const cat = document.getElementById('formDbKategoria').value;
-            const nazwa = document.getElementById('formDbNazwa').value.trim().toUpperCase().replace(/[\.\$#\[\]\/]/g, ',');
-            const mnoznikStr = document.getElementById('formDbMnoznik').value;
-            const mnoznik = parseFloat(mnoznikStr.replace(',', '.'));
-
-            if (!nazwa) { await customAlert("Podaj nazwę profilu!"); return; }
-            if (isNaN(mnoznik) || mnoznik <= 0) { await customAlert("Podaj prawidłowy mnożnik powierzchni (> 0)!"); return; }
-
-            if (!database[cat]) database[cat] = {};
-            if (database[cat][nazwa]) {
-                if (!(await customConfirm(`Profil ${nazwa} już istnieje w kategorii ${cat}. Czy chcesz zaktualizować jego mnożnik?`))) return;
-            }
-
-            database[cat][nazwa] = mnoznik;
-            document.getElementById('formDbNazwa').value = '';
-            document.getElementById('formDbMnoznik').value = '';
-            window.renderDbTable();
-            window.autoSaveToDisk();
-            await customAlert(`Zapisano profil: ${nazwa}`);
-        };
-
         window.addEventListener('DOMContentLoaded', async () => {
             try {
                 document.getElementById('induscoDate').valueAsDate = new Date();
                 document.getElementById('protocolDateInput').valueAsDate = new Date(); 
                 initGatunkiSelect(); renderColorsTable(); renderDbTable(); renderPaintTypesTable();
-                updatePaintDropdowns(); renderHistoryTable(); renderUsersTable(); renderProjectsList();
+                updatePaintDropdowns(); renderHistoryTable(); renderUsersTable(); renderProjectsList(); renderArchiveList();
                 renderInduscoTable(); addInduscoBulkRow(); toggleFormFields(); 
             } catch (e) { console.error("Błąd inicjalizacji: ", e); }
 
@@ -2072,32 +2056,34 @@
                 if (item.powierzchnia <= 0) return;
                 const isBlacha = item.typ === 'Blacha';
                 const matType = isBlacha ? 'BLACHY' : 'PROFILE';
-                const unitName = (item.jednostka || "BRAK JEDNOSTKI") + " - " + matType;
+                const unitKey = (item.jednostka || "BRAK JEDNOSTKI") + "___" + matType;
                 
-                if (!unitsData[unitName]) {
-                    unitsData[unitName] = { costBlachy: 0, costProfile: 0, paintVolumes: {} };
-                    paintTypes.forEach(pt => { unitsData[unitName].paintVolumes[pt.id] = { totalVolume: 0, colors: {}, thinnerPct: pt.thinnerPct }; });
+                if (!unitsData[unitKey]) {
+                    unitsData[unitKey] = { projectName: (item.jednostka || "Brak jednostki"), costBlachy: 0, costProfile: 0, paintVolumes: {} };
+                    paintTypes.forEach(pt => { unitsData[unitKey].paintVolumes[pt.id] = { totalVolume: 0, colors: {}, thinnerPct: pt.thinnerPct }; });
                 }
 
                 const appliedCostRate = isBlacha ? laborCosts.blachy : laborCosts.profile;
                 const itemCost = item.powierzchnia * appliedCostRate;
-                if (isBlacha) unitsData[unitName].costBlachy += itemCost; else unitsData[unitName].costProfile += itemCost;
+                if (isBlacha) unitsData[unitKey].costBlachy += itemCost; else unitsData[unitKey].costProfile += itemCost;
                 grandTotalCost += itemCost;
 
                 const brandKey = item.farba.toUpperCase();
                 const ptConfig = paintTypes.find(p => p.id === brandKey) || paintTypes[0]; 
-                if(!unitsData[unitName].paintVolumes[brandKey]) unitsData[unitName].paintVolumes[brandKey] = { totalVolume: 0, colors: {}, thinnerPct: ptConfig.thinnerPct };
+                if(!unitsData[unitKey].paintVolumes[brandKey]) unitsData[unitKey].paintVolumes[brandKey] = { totalVolume: 0, colors: {}, thinnerPct: ptConfig.thinnerPct };
                 
                 const appliedYield = isBlacha ? ptConfig.yieldBlachy : ptConfig.yieldProfile;
                 const itemPaintVol = item.powierzchnia / appliedYield;
-                unitsData[unitName].paintVolumes[brandKey].totalVolume += itemPaintVol;
+                unitsData[unitKey].paintVolumes[brandKey].totalVolume += itemPaintVol;
 
                 const colorName = item.kolorInfo.name; const colorHex = item.kolorInfo.hex;
-                if (!unitsData[unitName].paintVolumes[brandKey].colors[colorName]) unitsData[unitName].paintVolumes[brandKey].colors[colorName] = { hex: colorHex, volume: 0 };
-                unitsData[unitName].paintVolumes[brandKey].colors[colorName].volume += itemPaintVol;
+                if (!unitsData[unitKey].paintVolumes[brandKey].colors[colorName]) unitsData[unitKey].paintVolumes[brandKey].colors[colorName] = { hex: colorHex, volume: 0 };
+                unitsData[unitKey].paintVolumes[brandKey].colors[colorName].volume += itemPaintVol;
             });
 
-            for (const [unit, data] of Object.entries(unitsData)) {
+            for (const [unitK, data] of Object.entries(unitsData)) {
+                const isB = unitK.endsWith("___BLACHY");
+                const unitNameDisplay = data.projectName + (isB ? " (BLACHY)" : " (PROFILE)");
                 const unitTotalCost = data.costBlachy + data.costProfile;
                 const generateBrandHtml = (brandKey) => {
                     const bData = data.paintVolumes[brandKey];
@@ -2119,7 +2105,7 @@
                 let dynamicColumnsHtml = paintTypes.map(pt => `<div class="border border-black p-1 bg-white"><h4 class="text-[10px] font-bold text-black border-b border-black pb-0.5 uppercase truncate" title="${pt.name}">${pt.name}</h4>${generateBrandHtml(pt.id)}</div>`).join('');
                 const colCountClass = Math.min(paintTypes.length + 1, 5);
 
-                unitCard.innerHTML = `<h3 class="text-xs font-bold uppercase mb-1 pb-0.5 border-b border-black flex items-center justify-between text-black"><span>KALKULACJA: ${unit}</span><span class="border border-black px-1">SUMA: ${formatNumber(unitTotalCost, 2)} PLN</span></h3>
+                unitCard.innerHTML = `<h3 class="text-xs font-bold uppercase mb-1 pb-0.5 border-b border-black flex items-center justify-between text-black"><span>KALKULACJA: ${unitNameDisplay}</span><span class="border border-black px-1">SUMA: ${formatNumber(unitTotalCost, 2)} PLN</span></h3>
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-${colCountClass} gap-2"><div class="border border-black p-1 bg-white"><h4 class="text-[10px] font-bold text-black uppercase border-b border-black pb-0.5">Koszty</h4><div class="space-y-0.5 text-[9px] mt-1 font-bold text-black"><div class="flex justify-between"><span>BLACHY:</span><span>${formatNumber(data.costBlachy, 2)} PLN</span></div><div class="flex justify-between"><span>PROFILE/RURY:</span><span>${formatNumber(data.costProfile, 2)} PLN</span></div><div class="border-t border-black mt-0.5 pt-0.5 flex justify-between"><span>RAZEM:</span><span>${formatNumber(unitTotalCost, 2)} PLN</span></div></div></div>${dynamicColumnsHtml}</div>`;
                 container.appendChild(unitCard);
             }
@@ -2308,7 +2294,8 @@
             
             const sel = document.getElementById('formJednostka');
             if(sel) {
-                if (!projectsList.includes(projName)) { projectsList.push(projName); window.renderProjectsList(); }
+                const isArchived = archivedProjectsList.some(p => (typeof p === 'object' ? p.name : p) === projName);
+                if (!projectsList.includes(projName) && !isArchived) { projectsList.push(projName); window.renderProjectsList(); }
                 sel.value = projName;
             }
 
@@ -2525,7 +2512,7 @@
                 let currentBalance = 0;
                 events.forEach(ev => {
                     if (ev.rodzaj === 'REMANENT') {
-                        const korekta = ev.rawAmount - currentBalance;
+                        const korekta = currentBalance - ev.rawAmount;
                         window.remanentAdjustments[ev.induscoIndex] = korekta;
                         currentBalance = ev.rawAmount;
                     } else { 
@@ -2695,14 +2682,84 @@
             else if (pin !== null) await customAlert("Nieprawidłowy kod PIN.");
         };
 
+        window.filterDbTable = function() { window.renderDbTable(); };
+
+        window.updateDbMultiplier = async function(cat, key, value) {
+            const cleanValue = value.replace(/[\s\u00A0]/g, '').replace(',', '.');
+            const num = parseFloat(cleanValue);
+            if (!isNaN(num) && num > 0) {
+                database[cat][key] = num;
+                window.updateProfilSelect(); window.calculate();
+            } else {
+                await customAlert("Podana wartość musi być liczbą większą od zera.");
+                window.renderDbTable();
+            }
+        };
+
+        window.renderDbTable = function() {
+            const previewSection = document.getElementById('dbPreviewSection');
+            const tbody = document.getElementById('dbTableBody');
+            const countBadge = document.getElementById('dbCountBadge');
+            const searchInput = document.getElementById('dbSearchInput');
+            const query = searchInput ? searchInput.value.toLowerCase() : "";
+            
+            tbody.innerHTML = '';
+            let totalCount = 0; let totalInDb = 0;
+            
+            for (const cat in database) {
+                if (cat === 'Płaskowniki FB') continue; 
+                const keys = Object.keys(database[cat]).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+                totalInDb += keys.length;
+                if (keys.length === 0) continue;
+                
+                const filteredKeys = keys.filter(k => k.toLowerCase().includes(query));
+                if (filteredKeys.length === 0) continue;
+                
+                const headerTr = document.createElement('tr');
+                headerTr.innerHTML = `<td colspan="2" class="font-bold uppercase tracking-wider text-[11px] bg-gray-100 text-black px-3 py-2 border-b border-black">${cat}</td>`;
+                tbody.appendChild(headerTr);
+                
+                filteredKeys.forEach(key => {
+                    totalCount++;
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-gray-100 transition-colors";
+                    tr.innerHTML = `
+                        <td class="pl-6 font-bold text-black px-3 py-1.5 border-b border-gray-300">${key}</td>
+                        <td class="text-right px-3 py-1.5 border-b border-gray-300">
+                            <input type="text" value="${window.formatNumber(database[cat][key], 4)}" 
+                                onchange="updateDbMultiplier('${cat}', '${key}', this.value)" class="w-24 text-right bg-transparent focus:bg-white border border-transparent hover:border-black focus:border-black outline-none text-black font-bold px-1 py-0.5 transition-all">
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+            countBadge.textContent = totalCount;
+            if (totalInDb > 0) { previewSection.classList.remove('hidden'); previewSection.classList.add('flex'); } 
+            else { previewSection.classList.add('hidden'); previewSection.classList.remove('flex'); }
+            window.updateProfilSelect();
+
+            const dlProfile = document.getElementById('dl-profile');
+            if (dlProfile) {
+                dlProfile.innerHTML = '';
+                for (const cat in database) {
+                    if (cat === 'Płaskowniki FB') continue; 
+                    Object.keys(database[cat]).forEach(k => {
+                        const opt = document.createElement('option');
+                        opt.value = k;
+                        dlProfile.appendChild(opt);
+                    });
+                }
+            }
+        };
+
         let currentDailyPaint = null;
         
         window.getAllPossibleDailyPaints = function() {
             let paints = []; 
             paintTypes.forEach(pt => { 
-                paints.push(`${pt.name} - Szary`); 
-                paints.push(`${pt.name} - Czerwony`); 
-                paints.push(`${pt.name} - Zielony`); 
+                if (!pt.fallbacks || !pt.fallbacks['Szary']) paints.push(`${pt.name} - Szary`); 
+                if (!pt.fallbacks || !pt.fallbacks['Czerwony']) paints.push(`${pt.name} - Czerwony`); 
+                if (!pt.fallbacks || !pt.fallbacks['Zielony']) paints.push(`${pt.name} - Zielony`); 
                 paints.push(`${pt.name} - Rozcieńczalnik`); 
             }); 
             return paints;
