@@ -2637,7 +2637,7 @@
                         kalkulacja: '-', 
                         akcje: `<button onclick="editInduscoRecord(${idx})" class="text-[10px] font-bold border border-black px-2 py-1 bg-white hover:bg-gray-200 uppercase print-hide">EDYTUJ ZDARZ.</button>`, 
                         _rawId: 'ind_' + idx, 
-                        rawAmount: r.amount 
+                        rawAmount: Math.abs(r.amount) 
                     });
                 }
             });
@@ -2656,25 +2656,46 @@
             events.sort((a, b) => a.dateObj - b.dateObj);
             let currentBalance = 0;
             events.forEach(ev => {
-                if (ev.rodzaj === 'REMANENT') currentBalance += ev.rawAmount; else { currentBalance += ev.wydanie; currentBalance -= ev.utylizacja; currentBalance -= ev.zuzycie; }
+                if (ev.rodzaj === 'REMANENT') {
+                    /* Logika korygująca zużycie na podstawie faktycznego remanentu */
+                    ev.zuzycieKorekta = currentBalance - ev.rawAmount;
+                    currentBalance = ev.rawAmount;
+                } else { 
+                    currentBalance += ev.wydanie; 
+                    currentBalance -= ev.utylizacja; 
+                    currentBalance -= ev.zuzycie; 
+                }
                 ev.pozostalo = currentBalance;
             });
 
             let filteredEvents = events; const filterMonth = document.getElementById('dailyFilterMonth').value;
             if (filterMonth) { const [fYear, fMonth] = filterMonth.split('-'); filteredEvents = events.filter(ev => ev.dateObj.getFullYear() === parseInt(fYear) && (ev.dateObj.getMonth() + 1) === parseInt(fMonth)); }
 
-            tbody.innerHTML = ''; let sumWydanie = 0, sumUtylizacja = 0, sumZuzycie = 0, sumM2 = 0;
+            tbody.innerHTML = ''; let sumDostawa = 0, sumUtylizacja = 0, sumZuzycie = 0, sumM2 = 0;
             if (filteredEvents.length === 0) { tbody.innerHTML = `<tr><td colspan="10" class="p-6 font-bold uppercase text-gray-500 text-center">Brak zapisanych działań dla wybranej farby.</td></tr>`; tfoot.innerHTML = ''; return; }
 
             filteredEvents.forEach(ev => {
-                sumWydanie += ev.wydanie; sumUtylizacja += ev.utylizacja; sumZuzycie += ev.zuzycie; sumM2 += ev.m2;
-                let textColorDostawa = ev.rodzaj === 'REMANENT' && ev.rawAmount > 0 ? "text-yellow-700" : "text-green-700"; let textColorUtyl = ev.rodzaj === 'REMANENT' && ev.rawAmount < 0 ? "text-yellow-700" : "text-red-600";
-                let valDostawa = (ev.rodzaj === 'REMANENT' && ev.rawAmount > 0) ? ev.rawAmount : ev.wydanie; let valUtyl = (ev.rodzaj === 'REMANENT' && ev.rawAmount < 0) ? Math.abs(ev.rawAmount) : ev.utylizacja;
+                let valDostawa = ev.wydanie;
+                let valUtyl = ev.utylizacja;
+                let valZuzycie = ev.zuzycie;
 
-                tbody.innerHTML += `<tr class="hover:bg-gray-50"><td class="px-2 py-2 border-r border-b border-black font-bold text-black">${window.formatISOToPL(window.dateToISO(ev.dateObj))}</td><td class="px-2 py-2 border-r border-b border-black font-bold uppercase">${ev.jednostka}</td><td class="px-2 py-2 border-r border-b border-black ${textColorDostawa} font-bold">${valDostawa > 0 ? window.formatNumber(valDostawa) : ''}</td><td class="px-2 py-2 border-r border-b border-black ${textColorUtyl} font-bold">${valUtyl > 0 ? window.formatNumber(valUtyl) : ''}</td><td class="px-2 py-2 border-r border-b border-black font-bold">${ev.zuzycie > 0 ? window.formatNumber(ev.zuzycie) : ''}</td><td class="px-2 py-2 border-r border-b border-black font-bold bg-yellow-50 text-black text-sm">${window.formatNumber(ev.pozostalo)}</td><td class="px-2 py-2 border-r border-b border-black text-blue-700 font-bold">${ev.m2 > 0 ? window.formatNumber(ev.m2) : ''}</td><td class="px-2 py-2 border-r border-b border-black text-gray-700 font-bold uppercase text-[10px]">${ev.rodzaj}</td><td class="px-2 py-2 border-r border-b border-black text-gray-700 font-bold text-[10px] uppercase">${ev.kalkulacja}</td><td class="px-2 py-2 border-b border-black text-center print-hide">${ev.akcje}</td></tr>`;
+                if (ev.rodzaj === 'REMANENT') {
+                    valZuzycie = ev.zuzycieKorekta;
+                }
+
+                sumDostawa += valDostawa; 
+                sumUtylizacja += valUtyl; 
+                sumZuzycie += valZuzycie; 
+                sumM2 += ev.m2;
+                
+                let textColorDostawa = "text-green-700"; 
+                let textColorUtyl = "text-red-600";
+                let textColorZuzycie = ev.rodzaj === 'REMANENT' ? "text-yellow-700" : "text-black";
+
+                tbody.innerHTML += `<tr class="hover:bg-gray-50"><td class="px-2 py-2 border-r border-b border-black font-bold text-black">${window.formatISOToPL(window.dateToISO(ev.dateObj))}</td><td class="px-2 py-2 border-r border-b border-black font-bold uppercase">${ev.jednostka}</td><td class="px-2 py-2 border-r border-b border-black ${textColorDostawa} font-bold">${valDostawa !== 0 ? window.formatNumber(valDostawa) : ''}</td><td class="px-2 py-2 border-r border-b border-black ${textColorUtyl} font-bold">${valUtyl !== 0 ? window.formatNumber(valUtyl) : ''}</td><td class="px-2 py-2 border-r border-b border-black font-bold ${textColorZuzycie}">${valZuzycie !== 0 ? window.formatNumber(valZuzycie) : (ev.rodzaj === 'REMANENT' ? '0,00' : '')}</td><td class="px-2 py-2 border-r border-b border-black font-bold bg-yellow-50 text-black text-sm">${window.formatNumber(ev.pozostalo)}</td><td class="px-2 py-2 border-r border-b border-black text-blue-700 font-bold">${ev.m2 > 0 ? window.formatNumber(ev.m2) : ''}</td><td class="px-2 py-2 border-r border-b border-black text-gray-700 font-bold uppercase text-[10px]">${ev.rodzaj}</td><td class="px-2 py-2 border-r border-b border-black text-gray-700 font-bold text-[10px] uppercase">${ev.kalkulacja}</td><td class="px-2 py-2 border-b border-black text-center print-hide">${ev.akcje}</td></tr>`;
             });
 
-            tfoot.innerHTML = `<tr><td colspan="2" class="px-2 py-3 border-r border-black text-right uppercase text-black font-bold bg-gray-200">SUMA WIDOCZNYCH:</td><td class="px-2 py-3 border-r border-black text-green-700 font-bold text-sm bg-gray-200">${window.formatNumber(sumWydanie)}</td><td class="px-2 py-3 border-r border-black text-red-600 font-bold text-sm bg-gray-200">${window.formatNumber(sumUtylizacja)}</td><td class="px-2 py-3 border-r border-black font-bold text-sm bg-gray-200">${window.formatNumber(sumZuzycie)}</td><td class="px-2 py-3 border-r border-black font-bold bg-yellow-100 text-black text-sm">${window.formatNumber(filteredEvents[filteredEvents.length-1].pozostalo)}</td><td class="px-2 py-3 border-r border-black text-blue-700 font-bold text-sm bg-gray-200">${window.formatNumber(sumM2)}</td><td colspan="3" class="px-2 py-3 bg-gray-200 border-black print-hide"></td></tr>`;
+            tfoot.innerHTML = `<tr><td colspan="2" class="px-2 py-3 border-r border-black text-right uppercase text-black font-bold bg-gray-200">SUMA WIDOCZNYCH:</td><td class="px-2 py-3 border-r border-black text-green-700 font-bold text-sm bg-gray-200">${window.formatNumber(sumDostawa)}</td><td class="px-2 py-3 border-r border-black text-red-600 font-bold text-sm bg-gray-200">${window.formatNumber(sumUtylizacja)}</td><td class="px-2 py-3 border-r border-black font-bold text-sm bg-gray-200">${window.formatNumber(sumZuzycie)}</td><td class="px-2 py-3 border-r border-black font-bold bg-yellow-100 text-black text-sm">${window.formatNumber(filteredEvents[filteredEvents.length-1].pozostalo)}</td><td class="px-2 py-3 border-r border-black text-blue-700 font-bold text-sm bg-gray-200">${window.formatNumber(sumM2)}</td><td colspan="3" class="px-2 py-3 bg-gray-200 border-black print-hide"></td></tr>`;
         };
     </script>
 </body>
