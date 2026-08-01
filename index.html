@@ -73,6 +73,15 @@
 </head>
 <body class="p-2 md:p-4">
 
+    <!-- GLOBAL ERROR BANNER -->
+    <div id="globalErrorBanner" class="fixed top-0 left-0 w-full bg-red-600 text-white font-bold p-3 z-[9999] hidden items-center justify-between shadow-lg print-hide">
+        <div>
+            <span class="uppercase text-sm">Złapano błąd krytyczny:</span>
+            <span id="globalErrorText" class="ml-2 font-normal text-sm"></span>
+        </div>
+        <button onclick="document.getElementById('globalErrorBanner').classList.add('hidden')" class="bg-black px-3 py-1 hover:bg-gray-800 text-xs uppercase">Zamknij</button>
+    </div>
+
     <!-- DATALISTS DO PODPOWIEDZI W POLACH -->
     <datalist id="dl-shopprimer"></datalist>
     <datalist id="dl-typy">
@@ -170,7 +179,7 @@
                     <label class="block text-xs font-bold text-black mb-1 uppercase">Hasło</label>
                     <input type="password" id="loginPassword" class="w-full border-2 border-black p-2.5 text-sm outline-none focus:bg-gray-100 transition-colors" onkeypress="if(event.key === 'Enter') handleLogin()" autocomplete="current-password">
                 </div>
-                <button onclick="handleLogin()" class="w-full bg-black text-white font-bold uppercase py-3 border-2 border-black hover:bg-gray-800 transition mt-6">
+                <button onclick="handleLogin()" class="w-full bg-black text-white font-bold uppercase py-3 border-2 border-black hover:bg-gray-800 transition shadow-md mt-6">
                     Zaloguj się
                 </button>
                 <div id="loginError" class="hidden text-white bg-red-600 border-2 border-red-800 p-2 font-bold text-xs text-center mt-4 uppercase">
@@ -955,12 +964,28 @@
         // --- GLOBAL ERROR HANDLER ---
         window.onerror = function(message, source, lineno, colno, error) {
             console.error(`Złapany błąd aplikacji: ${message}\nLinia: ${lineno}`, error);
+            const banner = document.getElementById('globalErrorBanner');
+            if(banner) {
+                document.getElementById('globalErrorText').textContent = `${message} (Linia: ${lineno})`;
+                banner.classList.remove('hidden'); banner.classList.add('flex');
+            }
             return false;
         };
         
         window.addEventListener('unhandledrejection', function(event) {
             const errorMsg = event.reason?.message || event.reason;
             console.error(`Złapany błąd asynchroniczny (Promise):`, errorMsg, event.reason);
+            
+            if (errorMsg && errorMsg.includes('Permission denied')) {
+                // To jest specjalnie obsługiwane przez Firebase, nie psujemy widoku
+                return;
+            }
+
+            const banner = document.getElementById('globalErrorBanner');
+            if(banner) {
+                document.getElementById('globalErrorText').textContent = `Błąd chmury: ${errorMsg}`;
+                banner.classList.remove('hidden'); banner.classList.add('flex');
+            }
         });
         // -----------------------------
 
@@ -1488,7 +1513,7 @@
             const pass = document.getElementById('loginPassword').value;
             if (!email || !pass) {
                 const err = document.getElementById('loginError');
-                err.textContent = "Podaj e-mail i hasło!";
+                err.textContent = "Wprowadź e-mail i hasło!";
                 err.classList.remove('hidden');
                 return;
             }
@@ -1496,9 +1521,8 @@
                 await window.firebaseSignIn(window.firebaseAuth, email, pass);
                 document.getElementById('loginError').classList.add('hidden');
             } catch (error) {
-                const err = document.getElementById('loginError');
-                err.textContent = "Błąd logowania: " + error.message;
-                err.classList.remove('hidden');
+                document.getElementById('loginError').textContent = "Błąd logowania: " + error.message;
+                document.getElementById('loginError').classList.remove('hidden');
             }
         };
 
@@ -1515,15 +1539,14 @@
 
         window.handleUserAuthenticated = function(firebaseUser) {
             let foundUser = appUsers.find(u => u.login === firebaseUser.email);
-            const isPiotr = firebaseUser.email === 'piotr.pallach@crist.com.pl';
-            const hasRealAdmin = appUsers.some(u => u.role === 'admin' && u.login !== 'admin' && u.login !== 'piotr.pallach@crist.com.pl');
+            const hasRealAdmin = appUsers.some(u => u.role === 'admin' && u.login !== 'admin');
             
             if (!foundUser) {
                 const isFirst = appUsers.length === 0 || (appUsers.length === 1 && appUsers[0].login === 'admin') || !hasRealAdmin;
                 foundUser = { 
                     login: firebaseUser.email, 
-                    name: isPiotr ? 'Piotr Pallach' : firebaseUser.email.split('@')[0], 
-                    role: (isFirst || isPiotr) ? 'admin' : 'user', 
+                    name: firebaseUser.email.split('@')[0], 
+                    role: isFirst ? 'admin' : 'user', 
                     allowedTabs: window.AVAILABLE_TABS.map(t => t.id) 
                 };
                 if (isFirst && appUsers.length === 1 && appUsers[0].login === 'admin') {
@@ -1531,10 +1554,7 @@
                 }
                 appUsers.push(foundUser);
                 window.autoSaveToDisk();
-            } else if (isPiotr && foundUser.role !== 'admin') {
-                foundUser.role = 'admin'; // Wymuszenie uprawnień admina dla Piotra
-                window.autoSaveToDisk();
-            } else if (!hasRealAdmin && foundUser.role !== 'admin' && !isPiotr) {
+            } else if (!hasRealAdmin && foundUser.role !== 'admin') {
                 foundUser.role = 'admin';
                 window.autoSaveToDisk();
             }
@@ -1566,7 +1586,6 @@
 
         window.handleUserLoggedOut = function() {
             currentUser = null;
-            try { sessionStorage.removeItem('loggedInUser'); } catch(e) {} // Zabezpieczenie przed blokadą przeglądarki dla plików lokalnych
             document.getElementById('loginUsername').value = '';
             document.getElementById('loginPassword').value = '';
             document.getElementById('loginOverlay').classList.remove('hidden');
@@ -1893,7 +1912,7 @@
         };
 
         window.removeUser = async function(index) {
-            if(appUsers.length <= 1) { await customAlert("Nie można usunąć ostatniego użytkownika!"); return; }
+            if(appUsers.length <= 1) { await customAlert("Nie można usunąć ostatniego użytkownika z listy uprawnień!"); return; }
             const pin = await customPrompt("Podaj kod autoryzacji (PIN), aby usunąć użytkownika:", 'password');
             if (pin === "4321") {
                 if (appUsers[index].login === currentUser.login) { await customAlert("Nie możesz usunąć swojego własnego konta podczas bycia zalogowanym!"); return; }
