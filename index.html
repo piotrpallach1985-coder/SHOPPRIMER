@@ -971,6 +971,7 @@
         let currentPreviewProtocolNumber = null;
         window.editingProtocolId = null; 
         window.tempInputData = null; 
+        window.firebasePermissionDenied = false;
         
         let currentUser = null;
         let appUsers = [];
@@ -1156,6 +1157,7 @@
         };
 
         window.autoSaveToDisk = async function() {
+            if (window.firebasePermissionDenied) return;
             if (!USE_FIREBASE && !currentFileHandle) return;
             clearTimeout(autoSaveTimeout);
             autoSaveTimeout = setTimeout(async () => {
@@ -1187,11 +1189,22 @@
                 if (snapshot.exists()) {
                     await applyProjectData(JSON.stringify(snapshot.val()), true);
                 } else {
-                    const oldSnapshot = await window.dbGet(window.dbRef(window.firebaseDb, '/'));
-                    if (oldSnapshot.exists() && oldSnapshot.val() && oldSnapshot.val().projectsList) {
-                        await applyProjectData(JSON.stringify(oldSnapshot.val()), true);
-                        autoSaveToDisk();
-                    } else {
+                    try {
+                        const oldSnapshot = await window.dbGet(window.dbRef(window.firebaseDb, '/'));
+                        if (oldSnapshot.exists() && oldSnapshot.val() && oldSnapshot.val().projectsList) {
+                            await applyProjectData(JSON.stringify(oldSnapshot.val()), true);
+                            autoSaveToDisk();
+                        } else {
+                            const initialOverlay = document.getElementById('initialLoadOverlay');
+                            if (initialOverlay) {
+                                initialOverlay.classList.remove('hidden');
+                                initialOverlay.classList.add('flex');
+                            }
+                        }
+                    } catch (innerErr) {
+                        if (innerErr.message && innerErr.message.includes('Permission denied')) {
+                            throw innerErr;
+                        }
                         const initialOverlay = document.getElementById('initialLoadOverlay');
                         if (initialOverlay) {
                             initialOverlay.classList.remove('hidden');
@@ -1200,7 +1213,13 @@
                     }
                 }
             } catch (err) {
-                console.error("Błąd pobierania danych z Firebase:", err);
+                if (err.message && err.message.includes('Permission denied')) {
+                    console.warn("Zablokowano odczyt z Firebase (Permission denied). Skonfiguruj reguły bazy danych.");
+                    window.firebasePermissionDenied = true;
+                    await customAlert("<b>Brak dostępu do bazy (Permission denied)!</b><br><br>Logowanie powiodło się, ale baza Realtime Database blokuje odczyt. Przejdź do konsoli Firebase:<br><br><b>Realtime Database -> zakładka Rules</b><br><br>Wklej kod:<br><pre class='bg-gray-100 p-2 text-[10px] text-left border border-black mt-2'>{\n  \"rules\": {\n    \".read\": \"auth != null\",\n    \".write\": \"auth != null\"\n  }\n}</pre><br>Kliknij Publikuj i odśwież stronę.");
+                } else {
+                    console.error("Błąd pobierania danych z Firebase:", err);
+                }
             }
         };
 
