@@ -1484,7 +1484,7 @@
         };
 
         window.handleLogout = async function() {
-            window.cancelEditMode();
+            cancelEditMode();
             try {
                 if (window.firebaseAuth) {
                     await window.firebaseSignOut(window.firebaseAuth);
@@ -1496,20 +1496,26 @@
 
         window.handleUserAuthenticated = function(firebaseUser) {
             let foundUser = appUsers.find(u => u.login === firebaseUser.email);
+            const hasRealAdmin = appUsers.some(u => u.role === 'admin' && u.login !== 'admin');
+            
             if (!foundUser) {
-                const isFirst = appUsers.length === 0 || (appUsers.length === 1 && appUsers[0].login === 'admin');
+                const isFirst = appUsers.length === 0 || (appUsers.length === 1 && appUsers[0].login === 'admin') || !hasRealAdmin;
                 foundUser = { 
                     login: firebaseUser.email, 
                     name: firebaseUser.email.split('@')[0], 
                     role: isFirst ? 'admin' : 'user', 
                     allowedTabs: window.AVAILABLE_TABS.map(t => t.id) 
                 };
-                if (isFirst && appUsers.length === 1 && appUsers[0].login === 'admin') {
-                    appUsers = [];
+                if (isFirst) {
+                    appUsers = appUsers.filter(u => u.login !== 'admin');
                 }
                 appUsers.push(foundUser);
                 window.autoSaveToDisk();
+            } else if (!hasRealAdmin && foundUser.role !== 'admin') {
+                foundUser.role = 'admin';
+                window.autoSaveToDisk();
             }
+            
             currentUser = foundUser;
             currentUser.lastLogin = new Date().toLocaleString('pl-PL');
 
