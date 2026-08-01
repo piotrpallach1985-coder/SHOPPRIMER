@@ -163,8 +163,8 @@
             </div>
             <div class="space-y-4">
                 <div>
-                    <label class="block text-xs font-bold text-black mb-1 uppercase">Login</label>
-                    <input type="text" id="loginUsername" class="w-full border-2 border-black p-2.5 text-sm outline-none focus:bg-gray-100 transition-colors" autocomplete="username">
+                    <label class="block text-xs font-bold text-black mb-1 uppercase">E-mail</label>
+                    <input type="email" id="loginUsername" class="w-full border-2 border-black p-2.5 text-sm outline-none focus:bg-gray-100 transition-colors" autocomplete="username">
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-black mb-1 uppercase">Hasło</label>
@@ -173,7 +173,7 @@
                 <button onclick="handleLogin()" class="w-full bg-black text-white font-bold uppercase py-3 border-2 border-black hover:bg-gray-800 transition mt-6">
                     Zaloguj się
                 </button>
-                <div id="loginError" class="hidden text-white bg-black border-2 border-black p-2 font-bold text-xs text-center mt-4 uppercase">
+                <div id="loginError" class="hidden text-white bg-red-600 border-2 border-red-800 p-2 font-bold text-xs text-center mt-4 uppercase">
                     Błędny login lub hasło!
                 </div>
             </div>
@@ -247,24 +247,14 @@
         <div class="bg-white border-2 border-black p-6 w-full max-w-md shadow-2xl relative flex flex-col max-h-[90vh]">
             <h2 class="text-lg font-bold text-black uppercase border-b-2 border-black pb-2 mb-4">Edycja Użytkownika</h2>
             <div class="space-y-3 mb-4 overflow-y-auto flex-1 pr-2">
-                <div class="grid grid-cols-2 gap-3">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div>
-                        <label class="block text-xs font-bold text-black mb-1 uppercase">Login</label>
+                        <label class="block text-xs font-bold text-black mb-1 uppercase">E-mail (Login)</label>
                         <input type="text" id="editUserLogin" disabled class="w-full border border-gray-400 bg-gray-100 p-1.5 text-sm outline-none font-bold text-gray-600">
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-black mb-1 uppercase">Hasło</label>
-                        <input type="text" id="editUserPass" class="w-full border border-black p-1.5 text-sm outline-none font-bold">
-                    </div>
-                </div>
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
                         <label class="block text-xs font-bold text-black mb-1 uppercase">Imię i nazwisko</label>
                         <input type="text" id="editUserName" class="w-full border border-black p-1.5 text-sm outline-none font-bold">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-black mb-1 uppercase">Telefon</label>
-                        <input type="text" id="editUserPhone" class="w-full border border-black p-1.5 text-sm outline-none font-bold">
                     </div>
                 </div>
                 <div class="pb-1.5 flex items-center mt-2">
@@ -854,31 +844,24 @@
 
         <!-- WIDOK: USTAWIENIA -->
         <div id="view-users" class="space-y-4 hidden mt-4">
-            <div id="addUserSection" class="bg-white p-4 border border-black print-hide hidden">
-                <h2 class="text-sm font-bold text-black mb-3 border-b border-black pb-1 uppercase">Zarządzanie Użytkownikami</h2>
-                <div class="grid grid-cols-1 md:grid-cols-6 gap-3 items-end">
+            <div id="addUserSection" class="bg-gray-50 p-4 border border-black print-hide hidden">
+                <h2 class="text-sm font-bold text-black mb-1 uppercase">Dodaj użytkownika do listy uprawnień</h2>
+                <p class="text-xs text-gray-600 mb-3">Konta autoryzacyjne (hasła) należy utworzyć bezpośrednio w konsoli Firebase. Tutaj możesz powiązać adres e-mail pracownika, aby nadać mu imię, rolę i konkretne uprawnienia przed jego pierwszym logowaniem.</p>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
                     <div>
-                        <label class="block text-xs font-bold text-black mb-1 uppercase">Login *</label>
-                        <input type="text" id="formNewUserLogin" class="w-full border border-black p-1.5 text-sm outline-none">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-black mb-1 uppercase">Hasło *</label>
-                        <input type="text" id="formNewUserPass" class="w-full border border-black p-1.5 text-sm outline-none">
+                        <label class="block text-xs font-bold text-black mb-1 uppercase">E-mail z Firebase *</label>
+                        <input type="email" id="formNewUserLogin" class="w-full border border-black p-1.5 text-sm outline-none">
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-black mb-1 uppercase">Imię i nazwisko *</label>
                         <input type="text" id="formNewUserName" class="w-full border border-black p-1.5 text-sm outline-none">
                     </div>
-                    <div>
-                        <label class="block text-xs font-bold text-black mb-1 uppercase">Telefon</label>
-                        <input type="text" id="formNewUserPhone" class="w-full border border-black p-1.5 text-sm outline-none">
-                    </div>
                     <div class="pb-1.5 flex items-center h-full">
                         <input type="checkbox" id="formNewUserAdmin" class="mr-2 w-4 h-4 cursor-pointer">
-                        <label class="text-xs font-bold text-black uppercase cursor-pointer" for="formNewUserAdmin">Admin</label>
+                        <label class="text-xs font-bold text-black uppercase cursor-pointer" for="formNewUserAdmin">Administrator</label>
                     </div>
                     <div>
-                        <button onclick="addNewUser()" class="w-full bg-white border border-black hover:bg-black hover:text-white text-black font-bold py-1.5 px-2 uppercase text-sm transition">Dodaj</button>
+                        <button onclick="addNewUser()" class="w-full bg-white border border-black hover:bg-black hover:text-white text-black font-bold py-1.5 px-2 uppercase text-sm transition shadow-sm">Dodaj do listy</button>
                     </div>
                 </div>
             </div>
@@ -899,11 +882,9 @@
                     <table class="w-full text-left text-xs whitespace-nowrap">
                         <thead class="bg-white text-black font-bold sticky top-0 uppercase border-b-2 border-black">
                             <tr>
-                                <th class="px-3 py-2 border-r border-black">Login</th>
+                                <th class="px-3 py-2 border-r border-black">E-mail</th>
                                 <th class="px-3 py-2 border-r border-black">Imię i nazwisko</th>
-                                <th class="px-3 py-2 border-r border-black">Telefon</th>
                                 <th class="px-3 py-2 border-r border-black">Rola</th>
-                                <th class="px-3 py-2 border-r border-black">Hasło</th>
                                 <th id="colUserAction" class="px-3 py-2 text-center">Akcja</th>
                             </tr>
                         </thead>
@@ -918,7 +899,7 @@
     <!-- Moduł Logowania Firebase -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js";
         import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
 
@@ -942,6 +923,9 @@
         window.dbRef = ref;
         window.dbSet = set;
         window.dbGet = get;
+        window.firebaseAuth = auth;
+        window.firebaseSignIn = signInWithEmailAndPassword;
+        window.firebaseSignOut = signOut;
 
         let dataLoaded = false;
 
@@ -952,28 +936,17 @@
                     await window.loadDataFromFirebase();
                     dataLoaded = true;
                 }
+                if (window.handleUserAuthenticated) {
+                    window.handleUserAuthenticated(user);
+                }
             } else {
                 window.firebaseUser = null;
+                dataLoaded = false;
+                if (window.handleUserLoggedOut) {
+                    window.handleUserLoggedOut();
+                }
             }
         });
-
-        const initAuth = async () => {
-            try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    try {
-                        await signInWithCustomToken(auth, __initial_auth_token);
-                    } catch (tokenError) {
-                        await signInAnonymously(auth);
-                    }
-                } else {
-                    await signInAnonymously(auth);
-                }
-            } catch (error) {
-                console.error("Błąd logowania Firebase:", error.code, error.message);
-            }
-        };
-
-        initAuth();
     </script>
 
     <script>
@@ -1409,40 +1382,12 @@
                 const initialOverlay = document.getElementById('initialLoadOverlay');
                 if (initialOverlay) { initialOverlay.classList.add('hidden'); initialOverlay.classList.remove('flex'); }
 
-                if (!currentUser) {
-                    const savedLogin = sessionStorage.getItem('loggedInUser');
-                    if (savedLogin) {
-                        const foundUser = appUsers.find(u => u.login === savedLogin);
-                        if (foundUser) currentUser = foundUser;
-                    }
-                }
-
-                if (!currentUser) {
-                    const loginOverlay = document.getElementById('loginOverlay');
-                    loginOverlay.classList.remove('hidden'); loginOverlay.classList.add('flex');
+                if (window.firebaseUser) {
+                    window.handleUserAuthenticated(window.firebaseUser);
                 } else {
-                    const loginOverlay = document.getElementById('loginOverlay');
-                    if (loginOverlay) {
-                        loginOverlay.classList.add('hidden'); 
-                        loginOverlay.classList.remove('flex');
-                    }
-                    document.getElementById('mainAppContainer').classList.remove('locked-ui');
-                    
-                    const welcomeMsg = document.getElementById('welcomeMessage');
-                    const welcomeName = document.getElementById('welcomeName');
-                    if (welcomeMsg && welcomeName) {
-                        welcomeName.textContent = currentUser.name || currentUser.login;
-                        welcomeMsg.classList.remove('hidden');
-                    }
-                    const adminPanel = document.getElementById('adminPanel');
-                    if (adminPanel) adminPanel.classList.toggle('hidden', currentUser.role !== 'admin');
-                    const addUserSec = document.getElementById('addUserSection');
-                    if (addUserSec) addUserSec.classList.toggle('hidden', currentUser.role !== 'admin');
-                    
-                    updatePrintAuthor(currentUser.name || currentUser.login);
-                    
-                    window.applyUserPermissions();
-                    window.updateAlertsUI();
+                    document.getElementById('loginOverlay').classList.remove('hidden');
+                    document.getElementById('loginOverlay').classList.add('flex');
+                    document.getElementById('mainAppContainer').classList.add('locked-ui');
                 }
 
                 if(!isSilent) await customAlert("Wczytano projekt pomyślnie.");
@@ -1519,46 +1464,79 @@
             if (tabId === 'daily') { renderDailySidebar(); renderDailyLedger(); }
         };
 
-        window.handleLogin = function() {
-            const user = document.getElementById('loginUsername').value.trim();
+        window.handleLogin = async function() {
+            const email = document.getElementById('loginUsername').value.trim();
             const pass = document.getElementById('loginPassword').value;
-            const found = appUsers.find(u => u.login === user && u.password === pass);
-            if (found) {
-                currentUser = found;
-                sessionStorage.setItem('loggedInUser', currentUser.login);
-                currentUser.lastLogin = new Date().toLocaleString('pl-PL');
-                autoSaveToDisk();
-
-                document.getElementById('loginOverlay').classList.add('hidden');
-                document.getElementById('loginOverlay').classList.remove('flex');
+            if (!email || !pass) {
+                const err = document.getElementById('loginError');
+                err.textContent = "Podaj e-mail i hasło!";
+                err.classList.remove('hidden');
+                return;
+            }
+            try {
+                await window.firebaseSignIn(window.firebaseAuth, email, pass);
                 document.getElementById('loginError').classList.add('hidden');
-                document.getElementById('mainAppContainer').classList.remove('locked-ui');
-                
-                const welcomeMsg = document.getElementById('welcomeMessage');
-                const welcomeName = document.getElementById('welcomeName');
-                if (welcomeMsg && welcomeName) {
-                    welcomeName.textContent = currentUser.name || currentUser.login;
-                    welcomeMsg.classList.remove('hidden');
-                }
-                const adminPanel = document.getElementById('adminPanel');
-                if (adminPanel) adminPanel.classList.toggle('hidden', currentUser.role !== 'admin');
-                const addUserSec = document.getElementById('addUserSection');
-                if (addUserSec) addUserSec.classList.toggle('hidden', currentUser.role !== 'admin');
-
-                renderHistoryTable(); renderInduscoTable(); renderUsersTable();
-                updatePrintAuthor(currentUser.name || currentUser.login);
-                
-                window.applyUserPermissions();
-                window.checkAndShowAlertsOnLogin();
-            } else {
-                document.getElementById('loginError').classList.remove('hidden');
+            } catch (error) {
+                const err = document.getElementById('loginError');
+                err.textContent = "Błąd logowania: " + error.message;
+                err.classList.remove('hidden');
             }
         };
 
-        window.handleLogout = function() {
-            cancelEditMode();
+        window.handleLogout = async function() {
+            window.cancelEditMode();
+            try {
+                if (window.firebaseAuth) {
+                    await window.firebaseSignOut(window.firebaseAuth);
+                }
+            } catch (error) {
+                console.error("Błąd wylogowania", error);
+            }
+        };
+
+        window.handleUserAuthenticated = function(firebaseUser) {
+            let foundUser = appUsers.find(u => u.login === firebaseUser.email);
+            if (!foundUser) {
+                const isFirst = appUsers.length === 0 || (appUsers.length === 1 && appUsers[0].login === 'admin');
+                foundUser = { 
+                    login: firebaseUser.email, 
+                    name: firebaseUser.email.split('@')[0], 
+                    role: isFirst ? 'admin' : 'user', 
+                    allowedTabs: window.AVAILABLE_TABS.map(t => t.id) 
+                };
+                if (isFirst && appUsers.length === 1 && appUsers[0].login === 'admin') {
+                    appUsers = [];
+                }
+                appUsers.push(foundUser);
+                window.autoSaveToDisk();
+            }
+            currentUser = foundUser;
+            currentUser.lastLogin = new Date().toLocaleString('pl-PL');
+
+            document.getElementById('loginOverlay').classList.add('hidden');
+            document.getElementById('loginOverlay').classList.remove('flex');
+            document.getElementById('mainAppContainer').classList.remove('locked-ui');
+            
+            const welcomeMsg = document.getElementById('welcomeMessage');
+            const welcomeName = document.getElementById('welcomeName');
+            if (welcomeMsg && welcomeName) {
+                welcomeName.textContent = currentUser.name || currentUser.login;
+                welcomeMsg.classList.remove('hidden');
+            }
+            const adminPanel = document.getElementById('adminPanel');
+            if (adminPanel) adminPanel.classList.toggle('hidden', currentUser.role !== 'admin');
+            const addUserSec = document.getElementById('addUserSection');
+            if (addUserSec) addUserSec.classList.toggle('hidden', currentUser.role !== 'admin');
+            
+            updatePrintAuthor(currentUser.name || currentUser.login);
+            window.applyUserPermissions();
+            window.checkAndShowAlertsOnLogin();
+            
+            renderHistoryTable(); renderInduscoTable(); renderUsersTable();
+        };
+
+        window.handleUserLoggedOut = function() {
             currentUser = null;
-            sessionStorage.removeItem('loggedInUser');
             document.getElementById('loginUsername').value = '';
             document.getElementById('loginPassword').value = '';
             document.getElementById('loginOverlay').classList.remove('hidden');
@@ -1749,9 +1727,7 @@
             window.currentEditUserIndex = index;
             const user = appUsers[index];
             document.getElementById('editUserLogin').value = user.login;
-            document.getElementById('editUserPass').value = user.password;
             document.getElementById('editUserName').value = user.name || '';
-            document.getElementById('editUserPhone').value = user.phone || '';
             document.getElementById('editUserAdmin').checked = (user.role === 'admin');
             
             const grid = document.getElementById('editUserTabsGrid');
@@ -1796,12 +1772,10 @@
 
         window.saveEditUser = async function() {
             if (window.currentEditUserIndex === null) return;
-            const pass = document.getElementById('editUserPass').value.trim();
             const name = document.getElementById('editUserName').value.trim();
-            const phone = document.getElementById('editUserPhone').value.trim();
             const isAdmin = document.getElementById('editUserAdmin').checked;
             
-            if (!pass || !name) { await customAlert("Wypełnij wymagane pola (Hasło, Imię i nazwisko)!"); return; }
+            if (!name) { await customAlert("Wypełnij wymagane pola (Imię i nazwisko)!"); return; }
             
             const user = appUsers[window.currentEditUserIndex];
             
@@ -1810,9 +1784,7 @@
                 return;
             }
 
-            user.password = pass;
             user.name = name;
-            user.phone = phone;
             user.role = isAdmin ? 'admin' : 'user';
             
             if (!isAdmin) {
@@ -1854,9 +1826,7 @@
                 tr.innerHTML = `
                     <td class="px-3 py-2 border-r border-black font-bold text-black">${u.login}</td>
                     <td class="px-3 py-2 border-r border-black text-black">${u.name || '-'}</td>
-                    <td class="px-3 py-2 border-r border-black text-black">${u.phone || '-'}</td>
                     <td class="px-3 py-2 border-r border-black font-bold text-black uppercase">${rolaText}</td>
-                    <td class="px-3 py-2 border-black text-black ${isAdmin ? 'border-r' : ''}">********</td>
                     ${btnHtml}
                 `;
                 tbody.appendChild(tr);
@@ -1865,31 +1835,30 @@
 
         window.addNewUser = async function() {
             const login = document.getElementById('formNewUserLogin').value.trim();
-            const pass = document.getElementById('formNewUserPass').value.trim();
             const name = document.getElementById('formNewUserName').value.trim();
-            const phone = document.getElementById('formNewUserPhone').value.trim();
             const isAdmin = document.getElementById('formNewUserAdmin').checked;
             
-            if(!login || !pass || !name) { await customAlert("Wypełnij wszystkie pola oznaczone gwiazdką (Login, Hasło, Imię i nazwisko)!"); return; }
-            if(appUsers.find(u => u.login === login)) { await customAlert("Użytkownik już istnieje!"); return; }
+            if(!login || !name) { await customAlert("Wypełnij wszystkie pola oznaczone gwiazdką (E-mail, Imię i nazwisko)!"); return; }
+            if(appUsers.find(u => u.login === login)) { await customAlert("Użytkownik z tym e-mailem już istnieje na lokalnej liście uprawnień!"); return; }
             
-            const pin = await customPrompt("Podaj kod autoryzacji (PIN), aby dodać użytkownika:", 'password');
+            const pin = await customPrompt("Podaj kod autoryzacji (PIN), aby powiązać e-mail:", 'password');
             if (pin === "4321") {
                 const allTabs = window.AVAILABLE_TABS.map(t => t.id);
                 appUsers.push({ 
-                    login, 
-                    password: pass, 
+                    login: login, 
                     name: name, 
-                    phone: phone,
                     role: isAdmin ? 'admin' : 'user',
                     allowedTabs: allTabs 
                 });
+                
                 document.getElementById('formNewUserLogin').value = ''; 
-                document.getElementById('formNewUserPass').value = '';
                 document.getElementById('formNewUserName').value = ''; 
-                document.getElementById('formNewUserPhone').value = '';
                 document.getElementById('formNewUserAdmin').checked = false;
-                renderUsersTable(); autoSaveToDisk();
+                
+                renderUsersTable(); 
+                autoSaveToDisk();
+                
+                await customAlert("Pomyślnie dodano użytkownika do listy. Jeśli konto z tym adresem jest utworzone w konsoli Firebase, użytkownik będzie mógł się teraz zalogować i uzyska dostęp.");
             } else if (pin !== null) await customAlert("Nieprawidłowy kod PIN.");
         };
 
