@@ -1203,7 +1203,7 @@
                 } catch (e) {
                     console.warn("Autozapis w tle nieudany.", e);
                 }
-            }, 2000); // 2 sekundy debounce dla optymalizacji
+            }, 2000); 
         };
 
         window.loadDataFromFirebase = async function() {
@@ -1344,14 +1344,10 @@
                 if (projectData.activeInduscoRequests) activeInduscoRequests = projectData.activeInduscoRequests;
                 else activeInduscoRequests = [];
 
-                if (projectData.appUsers) {
+                if (projectData.appUsers && projectData.appUsers.length > 0) {
                     appUsers = projectData.appUsers;
-                    if (!appUsers.find(u => u.login === 'piotr.pallach')) {
-                        appUsers.push({ login: 'piotr.pallach', password: '!@#PiOtR', name: 'Piotr Pallach', role: 'admin' });
-                    } else {
-                        let p = appUsers.find(u => u.login === 'piotr.pallach');
-                        if (!p.role) { p.role = 'admin'; p.name = 'Piotr Pallach'; }
-                    }
+                } else {
+                    appUsers = [{ login: 'admin', password: 'admin', name: 'Administrator', role: 'admin' }];
                 }
                 
                 if (projectData.protocolCounter !== undefined) protocolCounter = projectData.protocolCounter;
@@ -1388,7 +1384,7 @@
                 if (projectData.paintTypes) {
                     paintTypes = projectData.paintTypes;
                     paintTypes = paintTypes.filter(p => p.id !== 'INNY');
-                    paintTypes.forEach(p => { if (!p.fallbacks) p.fallbacks = {}; }); // Inicjalizacja pustych reguł
+                    paintTypes.forEach(p => { if (!p.fallbacks) p.fallbacks = {}; }); 
                     
                     let ip = paintTypes.find(p => p.id === 'INTERPLATE');
                     if (ip && !ip.fallbacks['Zielony'] && paintTypes.find(p => p.id === 'SIGMAWELD')) {
@@ -1414,11 +1410,39 @@
                 if (initialOverlay) { initialOverlay.classList.add('hidden'); initialOverlay.classList.remove('flex'); }
 
                 if (!currentUser) {
+                    const savedLogin = sessionStorage.getItem('loggedInUser');
+                    if (savedLogin) {
+                        const foundUser = appUsers.find(u => u.login === savedLogin);
+                        if (foundUser) currentUser = foundUser;
+                    }
+                }
+
+                if (!currentUser) {
                     const loginOverlay = document.getElementById('loginOverlay');
                     loginOverlay.classList.remove('hidden'); loginOverlay.classList.add('flex');
                 } else {
+                    const loginOverlay = document.getElementById('loginOverlay');
+                    if (loginOverlay) {
+                        loginOverlay.classList.add('hidden'); 
+                        loginOverlay.classList.remove('flex');
+                    }
                     document.getElementById('mainAppContainer').classList.remove('locked-ui');
+                    
+                    const welcomeMsg = document.getElementById('welcomeMessage');
+                    const welcomeName = document.getElementById('welcomeName');
+                    if (welcomeMsg && welcomeName) {
+                        welcomeName.textContent = currentUser.name || currentUser.login;
+                        welcomeMsg.classList.remove('hidden');
+                    }
+                    const adminPanel = document.getElementById('adminPanel');
+                    if (adminPanel) adminPanel.classList.toggle('hidden', currentUser.role !== 'admin');
+                    const addUserSec = document.getElementById('addUserSection');
+                    if (addUserSec) addUserSec.classList.toggle('hidden', currentUser.role !== 'admin');
+                    
+                    updatePrintAuthor(currentUser.name || currentUser.login);
+                    
                     window.applyUserPermissions();
+                    window.updateAlertsUI();
                 }
 
                 if(!isSilent) await customAlert("Wczytano projekt pomyślnie.");
@@ -1501,6 +1525,7 @@
             const found = appUsers.find(u => u.login === user && u.password === pass);
             if (found) {
                 currentUser = found;
+                sessionStorage.setItem('loggedInUser', currentUser.login);
                 currentUser.lastLogin = new Date().toLocaleString('pl-PL');
                 autoSaveToDisk();
 
@@ -1533,6 +1558,7 @@
         window.handleLogout = function() {
             cancelEditMode();
             currentUser = null;
+            sessionStorage.removeItem('loggedInUser');
             document.getElementById('loginUsername').value = '';
             document.getElementById('loginPassword').value = '';
             document.getElementById('loginOverlay').classList.remove('hidden');
@@ -1582,7 +1608,6 @@
                     sel.appendChild(opt);
                 });
                 
-                // Awaryjne dodanie zarchiwizowanego, jeśli nadal jest w polu edycji
                 if (currentVal && !projectsList.some(p => p.name === currentVal)) {
                     const opt = document.createElement('option');
                     opt.value = currentVal; opt.textContent = currentVal + " (Archiwum)";
