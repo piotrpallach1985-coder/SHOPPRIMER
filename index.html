@@ -887,6 +887,18 @@
     <script>
         const USE_FIREBASE = true;
 
+        // --- GLOBAL ERROR HANDLER ---
+        window.onerror = function(message, source, lineno, colno, error) {
+            console.error(`Złapany błąd aplikacji: ${message}\nLinia: ${lineno}`, error);
+            return false;
+        };
+        
+        window.addEventListener('unhandledrejection', function(event) {
+            const errorMsg = event.reason?.message || event.reason;
+            console.error(`Złapany błąd asynchroniczny (Promise):`, errorMsg, event.reason);
+        });
+        // -----------------------------
+
         let currentFileHandle = null;
         let isPreviewMode = false;
         let autoSaveTimeout = null;
@@ -1334,7 +1346,16 @@
             }
         });
 
-        window.switchTab = function(tabId) {
+        window.switchTab = async function(tabId, bypassCheck = false) {
+            if (!bypassCheck) {
+                const calcView = document.getElementById('view-calc');
+                const isLeavingCalc = calcView && !calcView.classList.contains('hidden') && tabId !== 'calc';
+                if (isLeavingCalc && inputData.length > 0 && !isPreviewMode) {
+                    const confirmed = await window.customConfirm("Masz niezapisane elementy w Kalkulacji. Czy na pewno chcesz opuścić tę zakładkę bez zapisywania?");
+                    if (!confirmed) return;
+                }
+            }
+
             const views = ['daily', 'calc', 'db', 'colors', 'costs', 'history', 'users', 'projects', 'indusco', 'archive'];
             const dropdownTabs = ['db', 'colors', 'costs', 'users', 'archive'];
             
@@ -1423,6 +1444,12 @@
         };
 
         window.renderProjectsList = function() {
+            projectsList.sort((a, b) => {
+                const dateA = a.date ? window.parsePlDate(a.date).getTime() : 0;
+                const dateB = b.date ? window.parsePlDate(b.date).getTime() : 0;
+                return dateA - dateB;
+            });
+
             const tbody = document.getElementById('projectsTableBody');
             if(tbody) {
                 tbody.innerHTML = '';
@@ -1973,9 +2000,9 @@
         };
 
         window.updateArea = function(index, value) {
-            if (value === "" || value.trim() === "") inputData[index].manualArea = null; 
+            if (value === null || value === undefined || value.toString().trim() === "") inputData[index].manualArea = null; 
             else {
-                const num = parseFloat(value.replace(/[\s\u00A0]/g, '').replace(',', '.'));
+                const num = parseFloat(value.toString().replace(/[\s\u00A0]/g, '').replace(',', '.'));
                 if (!isNaN(num) && num >= 0) inputData[index].manualArea = num;
             }
             calculate(); 
@@ -1986,10 +2013,11 @@
         };
 
         window.updateRowData = function(index, field, value) {
-            if (field === 'Farba' || field === 'Gatunek') inputData[index][field] = value.toUpperCase();
+            const safeValue = value || "";
+            if (field === 'Farba' || field === 'Gatunek') inputData[index][field] = safeValue.toString().toUpperCase();
             else if (field === 'Ilosc') inputData[index][field] = parseInt(value) || 1;
             else if (field === 'Szerokosc' || field === 'Dlugosc' || field === 'Grubosc') inputData[index][field] = value === "" ? 0 : (parseFloat(value.toString().replace(',', '.')) || 0);
-            else if (field === 'Nazwa') inputData[index][field] = value.toUpperCase().replace(/[\.\$#\[\]\/]/g, ',');
+            else if (field === 'Nazwa') inputData[index][field] = safeValue.toString().toUpperCase().replace(/[\.\$#\[\]\/]/g, ',');
             else if (field === 'Typ') {
                 inputData[index][field] = value;
                 if (value === 'Blacha') inputData[index]['Nazwa'] = '-';
@@ -2004,15 +2032,17 @@
             inputData.forEach((row, index) => {
                 let farba = row.Farba || "Nie wybrano";
                 const jednostka = row.Jednostka, typ = row.Typ, gatunek = row.Gatunek;
-                const typLower = typ.toLowerCase(), nazwa = row.Nazwa;
-                const dlugosc = row.Dlugosc, szerokosc = row.Szerokosc, grubosc = row.Grubosc, ilosc = row.Ilosc;
+                const bezpiecznyTyp = typ || "";
+                const typLower = bezpiecznyTyp.toLowerCase(); 
+                const nazwa = row.Nazwa || "-";
+                const dlugosc = row.Dlugosc || 0, szerokosc = row.Szerokosc || 0, grubosc = row.Grubosc || 0, ilosc = row.Ilosc || 1;
                 
-                let powierzchnia = 0, mnoznik = "-", ostatecznyTyp = typ;
+                let powierzchnia = 0, mnoznik = "-", ostatecznyTyp = bezpiecznyTyp || "Inne";
 
                 if (typLower.includes('blach') || typLower.includes('plate')) {
                     ostatecznyTyp = "Blacha";
                     if (dlugosc > 0 && szerokosc > 0) { powierzchnia = (dlugosc / 1000) * (szerokosc / 1000) * ilosc * 2; mnoznik = formatNumber((szerokosc / 1000) * 2, 4); }
-                } else if (typ === 'Płaskowniki FB' || typLower.includes('fb')) {
+                } else if (bezpiecznyTyp === 'Płaskowniki FB' || typLower.includes('fb')) {
                     ostatecznyTyp = "Płaskowniki FB";
                     const match = nazwa.match(/\d+/); const szerokoscZNazwy = match ? parseInt(match[0]) : 0;
                     if (szerokoscZNazwy > 0) { const wspl = 2 * (szerokoscZNazwy / 1000); mnoznik = formatNumber(wspl, 4); if (dlugosc > 0) powierzchnia = (dlugosc / 1000) * wspl * ilosc; }
@@ -2339,7 +2369,7 @@
             document.getElementById('tableActionsContainer').classList.remove('hidden'); 
             if (currentUser) updatePrintAuthor(currentUser.name || currentUser.login);
             
-            window.switchTab('history'); 
+            window.switchTab('history', true); 
         };
 
         window.toggleSelectAllHistory = function() {
@@ -2671,7 +2701,7 @@
 
             induscoHistory[index].date = formatISOToPL(dIso); induscoHistory[index].paintType = type;
             induscoHistory[index].actionType = actionType; induscoHistory[index].isRemanent = isRem;
-            induscoHistory[index].amount = finalAmt; induscoHistory[index].author = induscoHistory[index].author + editInfo;
+            induscoHistory[index].amount = finalAmt; induscoHistory[index].author = (induscoHistory[index].author || "") + editInfo;
 
             renderInduscoTable(); if (document.getElementById('view-daily') && document.getElementById('view-daily').classList.contains('block')) { window.renderDailySidebar(); renderDailyLedger(); }
             autoSaveToDisk(); closeEditInduscoModal();
