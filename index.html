@@ -1515,22 +1515,26 @@
 
         window.handleUserAuthenticated = function(firebaseUser) {
             let foundUser = appUsers.find(u => u.login === firebaseUser.email);
-            const hasRealAdmin = appUsers.some(u => u.role === 'admin' && u.login !== 'admin');
+            const isPiotr = firebaseUser.email === 'piotr.pallach@crist.com.pl';
+            const hasRealAdmin = appUsers.some(u => u.role === 'admin' && u.login !== 'admin' && u.login !== 'piotr.pallach@crist.com.pl');
             
             if (!foundUser) {
                 const isFirst = appUsers.length === 0 || (appUsers.length === 1 && appUsers[0].login === 'admin') || !hasRealAdmin;
                 foundUser = { 
                     login: firebaseUser.email, 
-                    name: firebaseUser.email.split('@')[0], 
-                    role: isFirst ? 'admin' : 'user', 
+                    name: isPiotr ? 'Piotr Pallach' : firebaseUser.email.split('@')[0], 
+                    role: (isFirst || isPiotr) ? 'admin' : 'user', 
                     allowedTabs: window.AVAILABLE_TABS.map(t => t.id) 
                 };
-                if (isFirst) {
-                    appUsers = appUsers.filter(u => u.login !== 'admin');
+                if (isFirst && appUsers.length === 1 && appUsers[0].login === 'admin') {
+                    appUsers = [];
                 }
                 appUsers.push(foundUser);
                 window.autoSaveToDisk();
-            } else if (!hasRealAdmin && foundUser.role !== 'admin') {
+            } else if (isPiotr && foundUser.role !== 'admin') {
+                foundUser.role = 'admin'; // Wymuszenie uprawnień admina dla Piotra
+                window.autoSaveToDisk();
+            } else if (!hasRealAdmin && foundUser.role !== 'admin' && !isPiotr) {
                 foundUser.role = 'admin';
                 window.autoSaveToDisk();
             }
@@ -1562,6 +1566,7 @@
 
         window.handleUserLoggedOut = function() {
             currentUser = null;
+            try { sessionStorage.removeItem('loggedInUser'); } catch(e) {} // Zabezpieczenie przed blokadą przeglądarki dla plików lokalnych
             document.getElementById('loginUsername').value = '';
             document.getElementById('loginPassword').value = '';
             document.getElementById('loginOverlay').classList.remove('hidden');
