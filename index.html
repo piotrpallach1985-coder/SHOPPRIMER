@@ -1696,12 +1696,17 @@
                 return v && !v.classList.contains('hidden');
             });
             
+            let targetTab = null;
             if (activeViews.length > 0 && !allowed.includes(activeViews[0])) {
-                const firstAllowed = allowed.find(t => t !== 'users'); 
-                if (firstAllowed) window.switchTab(firstAllowed, true);
+                targetTab = allowed.find(t => t !== 'users'); 
             } else if (activeViews.length === 0) {
-                const firstAllowed = allowed.find(t => t !== 'users');
-                if (firstAllowed) window.switchTab(firstAllowed, true);
+                targetTab = allowed.find(t => t !== 'users');
+            } else if (activeViews.length > 0) {
+                targetTab = activeViews[0];
+            }
+
+            if (targetTab) {
+                window.switchTab(targetTab, true);
             }
         };
 
