@@ -1537,23 +1537,25 @@
             }
         };
 
-        window.handleUserAuthenticated = function(firebaseUser) {
-            // Null check for email
-            const userEmail = firebaseUser.email || '';
-            const userLogin = userEmail || firebaseUser.uid; // Use UID as fallback if email is null
+        window.handleUserAuthenticated = async function(firebaseUser) {
+            // TWARDA BLOKADA: Jeśli sesja nie ma e-maila (np. uszkodzony token lub logowanie anonimowe), wymuś wylogowanie
+            if (!firebaseUser || !firebaseUser.email) {
+                console.warn("Wykryto sesję bez adresu e-mail. Wymuszanie wylogowania.");
+                try { await window.firebaseSignOut(window.firebaseAuth); } catch(e){}
+                return;
+            }
 
+            const userLogin = firebaseUser.email;
             let foundUser = appUsers.find(u => u.login === userLogin);
+            
             const isPiotr = userLogin === 'piotr.pallach@crist.com.pl';
             const hasRealAdmin = appUsers.some(u => u.role === 'admin' && u.login !== 'admin' && u.login !== 'piotr.pallach@crist.com.pl');
             
             if (!foundUser) {
                 const isFirst = appUsers.length === 0 || (appUsers.length === 1 && appUsers[0].login === 'admin') || !hasRealAdmin;
-                // Safe split with fallback
-                const defaultName = isPiotr ? 'Piotr Pallach' : (userEmail ? userEmail.split('@')[0] : 'Nieznany Użytkownik');
-
                 foundUser = { 
                     login: userLogin, 
-                    name: defaultName, 
+                    name: isPiotr ? 'Piotr Pallach' : userLogin.split('@')[0], 
                     role: (isFirst || isPiotr) ? 'admin' : 'user', 
                     allowedTabs: window.AVAILABLE_TABS.map(t => t.id) 
                 };
