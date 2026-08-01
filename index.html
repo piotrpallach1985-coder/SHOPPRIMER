@@ -106,6 +106,22 @@
         </div>
     </div>
 
+    <!-- MODAL POWIADOMIEŃ -->
+    <div id="notificationsModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 z-[3500] hidden items-center justify-center print-hide">
+        <div class="bg-white border-2 border-black p-6 w-full max-w-lg shadow-2xl relative flex flex-col max-h-[90vh]">
+            <h2 class="text-lg font-bold text-black uppercase border-b-2 border-black pb-2 mb-4 flex items-center gap-2">
+                <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+                Powiadomienia i Alerty
+            </h2>
+            <div id="notificationsList" class="overflow-y-auto flex-1 space-y-3 mb-4 pr-2">
+                <!-- Powiadomienia będą generowane dynamicznie -->
+            </div>
+            <div class="flex justify-end gap-3 shrink-0 pt-2 border-t border-black">
+                <button onclick="closeNotificationsModal()" class="bg-black text-white border border-black hover:bg-gray-800 font-bold py-2 px-4 uppercase text-sm transition shadow-md">Zamknij</button>
+            </div>
+        </div>
+    </div>
+
     <!-- INITIAL LOAD OVERLAY -->
     <div id="initialLoadOverlay" class="fixed inset-0 bg-gray-200 z-[2000] hidden flex-col items-center justify-center print-hide">
         <div class="bg-white border-4 border-black p-8 max-w-md text-center shadow-2xl">
@@ -218,8 +234,12 @@
                     </span>
                 </h1>
             </div>
-            <div class="flex flex-wrap gap-2 print-hide">
-                <button onclick="handleLogout()" class="bg-white border border-red-600 text-red-600 hover:bg-red-600 hover:text-white px-3 py-2 text-xs font-bold transition flex items-center gap-1.5 uppercase ml-2">
+            <div class="flex flex-wrap gap-2 print-hide items-center">
+                <button onclick="openNotificationsModal()" id="notificationBell" class="relative bg-white border border-black hover:bg-gray-100 p-2 text-black transition flex items-center justify-center shadow-sm" title="Powiadomienia">
+                    <svg id="notificationBellIcon" class="w-5 h-5 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+                    <span id="notificationBadge" class="hidden absolute -top-2 -right-2 bg-red-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full border border-black">0</span>
+                </button>
+                <button onclick="handleLogout()" class="bg-white border border-red-600 text-red-600 hover:bg-red-600 hover:text-white px-3 py-2 text-xs font-bold transition flex items-center gap-1.5 uppercase ml-2 shadow-sm">
                     WYLOGUJ
                 </button>
             </div>
@@ -916,6 +936,8 @@
         let projectsList = [];
         let archivedProjectsList = [];
         let induscoHistory = [];
+        let activeRemanentAlerts = [];
+        window.currentNegativeAlerts = [];
         let database = {}; 
         let visibleDailyPaints = null;
 
@@ -1078,6 +1100,7 @@
                 inputData: inputData, 
                 printHistory: printHistory,
                 induscoHistory: induscoHistory || [],
+                activeRemanentAlerts: activeRemanentAlerts,
                 protocolCounter: protocolCounter,
                 paintTypes: paintTypes,
                 laborCosts: laborCosts,
@@ -1241,6 +1264,8 @@
                 }
                 if (projectData.archivedProjectsList) archivedProjectsList = projectData.archivedProjectsList;
                 if (projectData.induscoHistory) induscoHistory = projectData.induscoHistory;
+                if (projectData.activeRemanentAlerts) activeRemanentAlerts = projectData.activeRemanentAlerts;
+                else activeRemanentAlerts = [];
 
                 if (projectData.appUsers) {
                     appUsers = projectData.appUsers;
@@ -1306,7 +1331,7 @@
                 
                 renderDbTable(); renderPaintTypesTable(); updatePaintDropdowns();
                 renderHistoryTable(); renderUsersTable(); renderProjectsList(); renderArchiveList();
-                renderInduscoTable(); updateProfilSelect(); calculate();
+                renderInduscoTable(); updateProfilSelect(); calculate(); window.updateAlertsUI();
 
                 const initialOverlay = document.getElementById('initialLoadOverlay');
                 if (initialOverlay) { initialOverlay.classList.add('hidden'); initialOverlay.classList.remove('flex'); }
@@ -2588,6 +2613,8 @@
                 });
                 window.currentStocks[paint] = currentBalance;
             });
+            
+            if (window.updateAlertsUI) window.updateAlertsUI();
         };
 
         window.renderInduscoTable = function() {
@@ -2692,6 +2719,7 @@
             const actionType = actionEl ? actionEl.value : 'wydanie'; const amtStr = document.getElementById('editInduscoAmount').value; const amt = parseFloat(amtStr);
             if (!dIso || !type || isNaN(amt) || amtStr.trim() === '') { await customAlert("Wypełnij poprawnie wszystkie pola!"); return; }
 
+            const wasRem = induscoHistory[index].isRemanent || induscoHistory[index].actionType === 'remanent';
             let finalAmt = actionType === 'utylizacja' ? -Math.abs(amt) : Math.abs(amt);
             let isRem = actionType === 'remanent';
 
@@ -2702,6 +2730,10 @@
             induscoHistory[index].date = formatISOToPL(dIso); induscoHistory[index].paintType = type;
             induscoHistory[index].actionType = actionType; induscoHistory[index].isRemanent = isRem;
             induscoHistory[index].amount = finalAmt; induscoHistory[index].author = (induscoHistory[index].author || "") + editInfo;
+
+            if (!wasRem && isRem) {
+                activeRemanentAlerts.push({ id: Date.now().toString() + Math.random().toString(36).substr(2, 5), date: formatISOToPL(dIso), paintType: type, author: currentUser ? (currentUser.name || currentUser.login) : "System" });
+            }
 
             renderInduscoTable(); if (document.getElementById('view-daily') && document.getElementById('view-daily').classList.contains('block')) { window.renderDailySidebar(); renderDailyLedger(); }
             autoSaveToDisk(); closeEditInduscoModal();
@@ -2729,6 +2761,9 @@
                         let finalAmount = actionType === 'utylizacja' ? -Math.abs(amount) : Math.abs(amount);
                         let isRem = actionType === 'remanent';
                         induscoHistory.push({ paintType, amount: finalAmount, actionType: actionType, isRemanent: isRem, date: dateStr, author: currentUser ? (currentUser.name || currentUser.login) : "Nieznany" });
+                        if (isRem) {
+                            activeRemanentAlerts.push({ id: Date.now().toString() + Math.random().toString(36).substr(2, 5), date: dateStr, paintType: paintType, author: currentUser ? (currentUser.name || currentUser.login) : "Nieznany" });
+                        }
                         addedCount++;
                     }
                 }
@@ -2746,6 +2781,89 @@
             const pin = await customPrompt("Podaj kod autoryzacji (PIN), aby usunąć wpis z historii:", 'password');
             if (pin === "4321") { induscoHistory.splice(index, 1); renderInduscoTable(); if (document.getElementById('view-daily') && document.getElementById('view-daily').classList.contains('block')) { window.renderDailySidebar(); renderDailyLedger(); } autoSaveToDisk(); }
             else if (pin !== null) await customAlert("Nieprawidłowy kod PIN.");
+        };
+
+        window.updateAlertsUI = function() {
+            let negativeAlerts = [];
+            for (let paint in window.currentStocks) {
+                if (window.currentStocks[paint] < 0) {
+                    negativeAlerts.push({ paint: paint, stock: window.currentStocks[paint] });
+                }
+            }
+
+            window.currentNegativeAlerts = negativeAlerts;
+
+            const alertCount = activeRemanentAlerts.length + negativeAlerts.length;
+            const bellIcon = document.getElementById('notificationBellIcon');
+            const badge = document.getElementById('notificationBadge');
+
+            if (!bellIcon || !badge) return;
+
+            if (alertCount > 0) {
+                bellIcon.classList.add('animate-pulse', 'text-red-600');
+                badge.textContent = alertCount;
+                badge.classList.remove('hidden');
+            } else {
+                bellIcon.classList.remove('animate-pulse', 'text-red-600');
+                badge.classList.add('hidden');
+            }
+        };
+
+        window.openNotificationsModal = function() {
+            const listEl = document.getElementById('notificationsList');
+            listEl.innerHTML = '';
+            
+            let hasAlerts = false;
+
+            if (window.currentNegativeAlerts && window.currentNegativeAlerts.length > 0) {
+                hasAlerts = true;
+                window.currentNegativeAlerts.forEach(alert => {
+                    listEl.innerHTML += `
+                        <div class="border-l-4 border-red-600 bg-red-50 p-3 shadow-sm border-y border-r border-black">
+                            <div class="font-bold text-red-800 text-sm uppercase mb-1">Stan poniżej zera</div>
+                            <div class="text-xs text-black font-bold">Zapas z Menu Farb: <span class="text-red-600">${alert.paint}</span></div>
+                            <div class="text-xs text-black font-bold mt-0.5">Aktualny stan: <span class="text-red-600">${window.formatNumber(alert.stock, 2)} L</span></div>
+                        </div>
+                    `;
+                });
+            }
+
+            if (activeRemanentAlerts && activeRemanentAlerts.length > 0) {
+                hasAlerts = true;
+                activeRemanentAlerts.forEach(alert => {
+                    listEl.innerHTML += `
+                        <div class="border-l-4 border-yellow-500 bg-yellow-50 p-3 shadow-sm border-y border-r border-black flex flex-col sm:flex-row justify-between sm:items-center gap-3">
+                            <div>
+                                <div class="font-bold text-yellow-800 text-sm uppercase mb-1">Wykonano Remanent</div>
+                                <div class="text-xs text-black">Użytkownik <b>${alert.author}</b> wykonał remanent w dniu <b>${alert.date}</b>.</div>
+                                <div class="text-xs text-black mt-0.5 font-bold">Dotyczy farby: <b>${alert.paintType}</b></div>
+                            </div>
+                            <button onclick="acknowledgeRemanent('${alert.id}')" class="bg-yellow-400 hover:bg-yellow-500 text-black border border-black font-bold text-xs uppercase px-3 py-1.5 transition whitespace-nowrap shadow-sm h-fit">
+                                Zatwierdź
+                            </button>
+                        </div>
+                    `;
+                });
+            }
+
+            if (!hasAlerts) {
+                listEl.innerHTML = `<div class="text-sm font-bold text-gray-500 uppercase text-center p-4 border border-dashed border-gray-400">Brak nowych powiadomień.</div>`;
+            }
+
+            document.getElementById('notificationsModal').classList.remove('hidden');
+            document.getElementById('notificationsModal').classList.add('flex');
+        };
+
+        window.closeNotificationsModal = function() {
+            document.getElementById('notificationsModal').classList.add('hidden');
+            document.getElementById('notificationsModal').classList.remove('flex');
+        };
+
+        window.acknowledgeRemanent = function(id) {
+            activeRemanentAlerts = activeRemanentAlerts.filter(a => a.id !== id);
+            window.updateAlertsUI();
+            window.openNotificationsModal();
+            window.autoSaveToDisk();
         };
 
         window.filterDbTable = function() { window.renderDbTable(); };
