@@ -242,6 +242,50 @@
         </div>
     </div>
 
+    <!-- MODAL EDYCJI UŻYTKOWNIKA -->
+    <div id="editUserModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 z-[1050] hidden items-center justify-center print-hide">
+        <div class="bg-white border-2 border-black p-6 w-full max-w-md shadow-2xl relative flex flex-col max-h-[90vh]">
+            <h2 class="text-lg font-bold text-black uppercase border-b-2 border-black pb-2 mb-4">Edycja Użytkownika</h2>
+            <div class="space-y-3 mb-4 overflow-y-auto flex-1 pr-2">
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-black mb-1 uppercase">Login</label>
+                        <input type="text" id="editUserLogin" disabled class="w-full border border-gray-400 bg-gray-100 p-1.5 text-sm outline-none font-bold text-gray-600">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-black mb-1 uppercase">Hasło</label>
+                        <input type="text" id="editUserPass" class="w-full border border-black p-1.5 text-sm outline-none font-bold">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-black mb-1 uppercase">Imię i nazwisko</label>
+                        <input type="text" id="editUserName" class="w-full border border-black p-1.5 text-sm outline-none font-bold">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-black mb-1 uppercase">Telefon</label>
+                        <input type="text" id="editUserPhone" class="w-full border border-black p-1.5 text-sm outline-none font-bold">
+                    </div>
+                </div>
+                <div class="pb-1.5 flex items-center mt-2">
+                    <input type="checkbox" id="editUserAdmin" onchange="toggleUserPermissionsGrid()" class="mr-2 w-4 h-4 cursor-pointer">
+                    <label class="text-xs font-bold text-red-600 uppercase cursor-pointer" for="editUserAdmin">Konto Pełnego Administratora</label>
+                </div>
+                
+                <div id="editUserPermissionsContainer" class="border border-black p-2 bg-gray-50 mt-2">
+                    <label class="block text-xs font-bold text-black mb-2 uppercase border-b border-gray-300 pb-1">Dostępne zakładki (tylko dla użytkownika)</label>
+                    <div class="grid grid-cols-2 gap-2" id="editUserTabsGrid">
+                        <!-- Wyświetlane dynamicznie -->
+                    </div>
+                </div>
+            </div>
+            <div class="flex justify-end gap-3 shrink-0 pt-2 border-t border-gray-300">
+                <button onclick="closeEditUserModal()" class="bg-gray-200 text-black border border-black hover:bg-gray-300 font-bold py-2 px-4 uppercase text-sm transition">Anuluj</button>
+                <button onclick="saveEditUser()" class="bg-black text-white border border-black hover:bg-gray-800 font-bold py-2 px-4 uppercase text-sm transition shadow-md">Zapisz</button>
+            </div>
+        </div>
+    </div>
+
     <!-- MAIN APP CONTAINER -->
     <div id="mainAppContainer" class="w-full mx-auto space-y-4 locked-ui">
         <!-- HEADER -->
@@ -812,7 +856,7 @@
         <div id="view-users" class="space-y-4 hidden mt-4">
             <div id="addUserSection" class="bg-white p-4 border border-black print-hide hidden">
                 <h2 class="text-sm font-bold text-black mb-3 border-b border-black pb-1 uppercase">Zarządzanie Użytkownikami</h2>
-                <div class="grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
+                <div class="grid grid-cols-1 md:grid-cols-6 gap-3 items-end">
                     <div>
                         <label class="block text-xs font-bold text-black mb-1 uppercase">Login *</label>
                         <input type="text" id="formNewUserLogin" class="w-full border border-black p-1.5 text-sm outline-none">
@@ -824,6 +868,10 @@
                     <div>
                         <label class="block text-xs font-bold text-black mb-1 uppercase">Imię i nazwisko *</label>
                         <input type="text" id="formNewUserName" class="w-full border border-black p-1.5 text-sm outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-black mb-1 uppercase">Telefon</label>
+                        <input type="text" id="formNewUserPhone" class="w-full border border-black p-1.5 text-sm outline-none">
                     </div>
                     <div class="pb-1.5 flex items-center h-full">
                         <input type="checkbox" id="formNewUserAdmin" class="mr-2 w-4 h-4 cursor-pointer">
@@ -853,6 +901,7 @@
                             <tr>
                                 <th class="px-3 py-2 border-r border-black">Login</th>
                                 <th class="px-3 py-2 border-r border-black">Imię i nazwisko</th>
+                                <th class="px-3 py-2 border-r border-black">Telefon</th>
                                 <th class="px-3 py-2 border-r border-black">Rola</th>
                                 <th class="px-3 py-2 border-r border-black">Hasło</th>
                                 <th id="colUserAction" class="px-3 py-2 text-center">Akcja</th>
@@ -1369,6 +1418,7 @@
                     loginOverlay.classList.remove('hidden'); loginOverlay.classList.add('flex');
                 } else {
                     document.getElementById('mainAppContainer').classList.remove('locked-ui');
+                    window.applyUserPermissions();
                 }
 
                 if(!isSilent) await customAlert("Wczytano projekt pomyślnie.");
@@ -1472,7 +1522,9 @@
 
                 renderHistoryTable(); renderInduscoTable(); renderUsersTable();
                 updatePrintAuthor(currentUser.name || currentUser.login);
-                switchTab('daily'); 
+                
+                window.applyUserPermissions();
+                window.checkAndShowAlertsOnLogin();
             } else {
                 document.getElementById('loginError').classList.remove('hidden');
             }
@@ -1606,6 +1658,151 @@
             }
         };
 
+        window.AVAILABLE_TABS = [
+            { id: 'daily', name: 'Rozliczenie Dzienne' },
+            { id: 'calc', name: 'Kalkulacja' },
+            { id: 'history', name: 'Zestawienie Kalkulacji' },
+            { id: 'indusco', name: 'Shopprimer (Indusco)' },
+            { id: 'projects', name: 'Projekty' },
+            { id: 'db', name: 'Baza Profili' },
+            { id: 'colors', name: 'Kolorystyka' },
+            { id: 'costs', name: 'Wydajność (Koszty)' },
+            { id: 'archive', name: 'Archiwum' }
+        ];
+
+        window.applyUserPermissions = function() {
+            if (!currentUser) return;
+            const allTabs = window.AVAILABLE_TABS.map(t => t.id);
+            allTabs.push('users'); 
+            
+            let allowed = currentUser.role === 'admin' ? allTabs : (currentUser.allowedTabs || allTabs);
+            
+            allTabs.forEach(tab => {
+                const btn = document.getElementById('tab-' + tab);
+                if (btn) {
+                    btn.style.display = allowed.includes(tab) ? '' : 'none';
+                }
+            });
+            
+            const dropdownTabs = ['db', 'colors', 'costs', 'users', 'archive'];
+            const hasAnyDropdown = dropdownTabs.some(t => allowed.includes(t));
+            const btnMore = document.getElementById('btnMoreTabs');
+            if (btnMore) {
+                btnMore.style.display = hasAnyDropdown ? '' : 'none';
+            }
+            
+            const activeViews = allTabs.filter(tab => {
+                const v = document.getElementById('view-' + tab);
+                return v && !v.classList.contains('hidden');
+            });
+            
+            if (activeViews.length > 0 && !allowed.includes(activeViews[0])) {
+                const firstAllowed = allowed.find(t => t !== 'users'); 
+                if (firstAllowed) window.switchTab(firstAllowed, true);
+            } else if (activeViews.length === 0) {
+                const firstAllowed = allowed.find(t => t !== 'users');
+                if (firstAllowed) window.switchTab(firstAllowed, true);
+            }
+        };
+
+        window.checkAndShowAlertsOnLogin = function() {
+            window.updateAlertsUI();
+            const alertCount = activeRemanentAlerts.length + (window.currentNegativeAlerts ? window.currentNegativeAlerts.length : 0) + activeInduscoRequests.length;
+            if (alertCount > 0) {
+                window.openNotificationsModal();
+            }
+        };
+
+        window.currentEditUserIndex = null;
+
+        window.openEditUserModal = function(index) {
+            window.currentEditUserIndex = index;
+            const user = appUsers[index];
+            document.getElementById('editUserLogin').value = user.login;
+            document.getElementById('editUserPass').value = user.password;
+            document.getElementById('editUserName').value = user.name || '';
+            document.getElementById('editUserPhone').value = user.phone || '';
+            document.getElementById('editUserAdmin').checked = (user.role === 'admin');
+            
+            const grid = document.getElementById('editUserTabsGrid');
+            grid.innerHTML = '';
+            const userTabs = user.allowedTabs || window.AVAILABLE_TABS.map(t => t.id);
+            
+            window.AVAILABLE_TABS.forEach(tab => {
+                const isChecked = user.role === 'admin' || userTabs.includes(tab.id);
+                grid.innerHTML += `
+                    <label class="flex items-center gap-2 cursor-pointer p-1 hover:bg-gray-200 border border-transparent hover:border-gray-300">
+                        <input type="checkbox" class="edit-user-tab-cb w-4 h-4 cursor-pointer" value="${tab.id}" ${isChecked ? 'checked' : ''}>
+                        <span class="text-[10px] font-bold uppercase text-black">${tab.name}</span>
+                    </label>
+                `;
+            });
+            
+            window.toggleUserPermissionsGrid();
+            
+            document.getElementById('editUserModal').classList.remove('hidden');
+            document.getElementById('editUserModal').classList.add('flex');
+        };
+
+        window.toggleUserPermissionsGrid = function() {
+            const isAdmin = document.getElementById('editUserAdmin').checked;
+            const checkboxes = document.querySelectorAll('.edit-user-tab-cb');
+            checkboxes.forEach(cb => {
+                if (isAdmin) {
+                    cb.checked = true;
+                    cb.disabled = true;
+                    cb.parentElement.classList.add('opacity-50');
+                } else {
+                    cb.disabled = false;
+                    cb.parentElement.classList.remove('opacity-50');
+                }
+            });
+        };
+
+        window.closeEditUserModal = function() {
+            document.getElementById('editUserModal').classList.add('hidden');
+            document.getElementById('editUserModal').classList.remove('flex');
+        };
+
+        window.saveEditUser = async function() {
+            if (window.currentEditUserIndex === null) return;
+            const pass = document.getElementById('editUserPass').value.trim();
+            const name = document.getElementById('editUserName').value.trim();
+            const phone = document.getElementById('editUserPhone').value.trim();
+            const isAdmin = document.getElementById('editUserAdmin').checked;
+            
+            if (!pass || !name) { await customAlert("Wypełnij wymagane pola (Hasło, Imię i nazwisko)!"); return; }
+            
+            const user = appUsers[window.currentEditUserIndex];
+            
+            if (user.login === currentUser.login && !isAdmin && user.role === 'admin') {
+                await customAlert("Nie możesz usunąć sobie uprawnień administratora!");
+                return;
+            }
+
+            user.password = pass;
+            user.name = name;
+            user.phone = phone;
+            user.role = isAdmin ? 'admin' : 'user';
+            
+            if (!isAdmin) {
+                const checkboxes = document.querySelectorAll('.edit-user-tab-cb');
+                const allowed = Array.from(checkboxes).filter(cb => cb.checked).map(cb => cb.value);
+                user.allowedTabs = allowed;
+            } else {
+                user.allowedTabs = window.AVAILABLE_TABS.map(t => t.id);
+            }
+
+            if (user.login === currentUser.login) {
+                currentUser = user;
+                window.applyUserPermissions();
+            }
+
+            window.renderUsersTable();
+            window.autoSaveToDisk();
+            window.closeEditUserModal();
+        };
+
         window.renderUsersTable = function() {
             const tbody = document.getElementById('usersTableBody');
             if(!tbody) return;
@@ -1618,10 +1815,16 @@
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-gray-100 transition-colors border-b border-black";
                 const rolaText = u.role === 'admin' ? 'Administrator' : 'Użytkownik';
-                let btnHtml = isAdmin ? `<td class="px-3 py-2 text-center"><button onclick="removeUser(${i})" class="text-black font-bold uppercase text-xs border border-black px-2 py-0.5 hover:bg-black hover:text-white bg-white">Usuń</button></td>` : '';
+                let btnHtml = isAdmin ? `<td class="px-3 py-2 text-center">
+                    <div class="flex gap-1 justify-center">
+                        <button onclick="openEditUserModal(${i})" class="text-white font-bold uppercase text-[10px] border border-black px-2 py-0.5 hover:bg-blue-800 bg-blue-600 transition">Edytuj</button>
+                        <button onclick="removeUser(${i})" class="text-black font-bold uppercase text-[10px] border border-black px-2 py-0.5 hover:bg-black hover:text-white bg-white transition">Usuń</button>
+                    </div>
+                </td>` : '';
                 tr.innerHTML = `
                     <td class="px-3 py-2 border-r border-black font-bold text-black">${u.login}</td>
                     <td class="px-3 py-2 border-r border-black text-black">${u.name || '-'}</td>
+                    <td class="px-3 py-2 border-r border-black text-black">${u.phone || '-'}</td>
                     <td class="px-3 py-2 border-r border-black font-bold text-black uppercase">${rolaText}</td>
                     <td class="px-3 py-2 border-black text-black ${isAdmin ? 'border-r' : ''}">********</td>
                     ${btnHtml}
@@ -1634,16 +1837,28 @@
             const login = document.getElementById('formNewUserLogin').value.trim();
             const pass = document.getElementById('formNewUserPass').value.trim();
             const name = document.getElementById('formNewUserName').value.trim();
+            const phone = document.getElementById('formNewUserPhone').value.trim();
             const isAdmin = document.getElementById('formNewUserAdmin').checked;
             
-            if(!login || !pass || !name) { await customAlert("Wypełnij wszystkie pola oznaczone gwiazdką!"); return; }
+            if(!login || !pass || !name) { await customAlert("Wypełnij wszystkie pola oznaczone gwiazdką (Login, Hasło, Imię i nazwisko)!"); return; }
             if(appUsers.find(u => u.login === login)) { await customAlert("Użytkownik już istnieje!"); return; }
             
             const pin = await customPrompt("Podaj kod autoryzacji (PIN), aby dodać użytkownika:", 'password');
             if (pin === "4321") {
-                appUsers.push({ login, password: pass, name: name, role: isAdmin ? 'admin' : 'user' });
-                document.getElementById('formNewUserLogin').value = ''; document.getElementById('formNewUserPass').value = '';
-                document.getElementById('formNewUserName').value = ''; document.getElementById('formNewUserAdmin').checked = false;
+                const allTabs = window.AVAILABLE_TABS.map(t => t.id);
+                appUsers.push({ 
+                    login, 
+                    password: pass, 
+                    name: name, 
+                    phone: phone,
+                    role: isAdmin ? 'admin' : 'user',
+                    allowedTabs: allTabs 
+                });
+                document.getElementById('formNewUserLogin').value = ''; 
+                document.getElementById('formNewUserPass').value = '';
+                document.getElementById('formNewUserName').value = ''; 
+                document.getElementById('formNewUserPhone').value = '';
+                document.getElementById('formNewUserAdmin').checked = false;
                 renderUsersTable(); autoSaveToDisk();
             } else if (pin !== null) await customAlert("Nieprawidłowy kod PIN.");
         };
