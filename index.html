@@ -1538,15 +1538,22 @@
         };
 
         window.handleUserAuthenticated = function(firebaseUser) {
-            let foundUser = appUsers.find(u => u.login === firebaseUser.email);
-            const hasRealAdmin = appUsers.some(u => u.role === 'admin' && u.login !== 'admin');
+            const safeEmail = firebaseUser.email || firebaseUser.uid || "nieznany_uzytkownik";
+            let foundUser = appUsers.find(u => u.login === safeEmail);
+            const isPiotr = safeEmail === 'piotr.pallach@crist.com.pl';
+            const hasRealAdmin = appUsers.some(u => u.role === 'admin' && u.login !== 'admin' && u.login !== 'piotr.pallach@crist.com.pl');
             
             if (!foundUser) {
                 const isFirst = appUsers.length === 0 || (appUsers.length === 1 && appUsers[0].login === 'admin') || !hasRealAdmin;
+                
+                let defaultName = safeEmail;
+                if (isPiotr) defaultName = 'Piotr Pallach';
+                else if (safeEmail.includes('@')) defaultName = safeEmail.split('@')[0];
+
                 foundUser = { 
-                    login: firebaseUser.email, 
-                    name: firebaseUser.email.split('@')[0], 
-                    role: isFirst ? 'admin' : 'user', 
+                    login: safeEmail, 
+                    name: defaultName, 
+                    role: (isFirst || isPiotr) ? 'admin' : 'user', 
                     allowedTabs: window.AVAILABLE_TABS.map(t => t.id) 
                 };
                 if (isFirst && appUsers.length === 1 && appUsers[0].login === 'admin') {
@@ -1554,7 +1561,10 @@
                 }
                 appUsers.push(foundUser);
                 window.autoSaveToDisk();
-            } else if (!hasRealAdmin && foundUser.role !== 'admin') {
+            } else if (isPiotr && foundUser.role !== 'admin') {
+                foundUser.role = 'admin'; // Wymuszenie uprawnień admina dla Piotra
+                window.autoSaveToDisk();
+            } else if (!hasRealAdmin && foundUser.role !== 'admin' && !isPiotr) {
                 foundUser.role = 'admin';
                 window.autoSaveToDisk();
             }
