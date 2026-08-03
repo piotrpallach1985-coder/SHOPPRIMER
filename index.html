@@ -49,10 +49,11 @@
             body.print-history #view-history .print-hide { display: none !important; }
             body.print-history .protocol-header-history { display: block !important; }
 
-            body.print-monthly-report header, body.print-monthly-report #mainTabsContainer, body.print-monthly-report #mainAppContainer { display: none !important; }
-            body.print-monthly-report #monthlyReportModal { display: flex !important; position: static !important; inset: auto !important; width: 100% !important; max-width: none !important; max-height: none !important; background: transparent !important; box-shadow: none !important; border: none !important; }
-            body.print-monthly-report #monthlyReportModal > div { padding: 0 !important; border: none !important; box-shadow: none !important; }
-            body.print-monthly-report .print-hide { display: none !important; }
+            body.print-monthly-report header, body.print-monthly-report #mainTabsContainer, body.print-monthly-report #mainAppContainer,
+            body.print-paint-report header, body.print-paint-report #mainTabsContainer, body.print-paint-report #mainAppContainer { display: none !important; }
+            body.print-monthly-report #monthlyReportModal, body.print-paint-report #paintReportModal { display: flex !important; position: static !important; inset: auto !important; width: 100% !important; max-width: none !important; max-height: none !important; background: transparent !important; box-shadow: none !important; border: none !important; }
+            body.print-monthly-report #monthlyReportModal > div, body.print-paint-report #paintReportModal > div { padding: 0 !important; border: none !important; box-shadow: none !important; }
+            body.print-monthly-report .print-hide, body.print-paint-report .print-hide { display: none !important; }
 
             .page-break { page-break-before: always; break-before: page; margin-top: 20px !important;}
             .break-inside-avoid { page-break-inside: avoid; break-inside: avoid; }
@@ -325,6 +326,41 @@
         </div>
     </div>
 
+    <!-- MODAL RAPORT FARB -->
+    <div id="paintReportModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 z-[3500] hidden items-center justify-center print-hide">
+        <div class="bg-white border-2 border-black p-6 w-full max-w-4xl shadow-2xl relative flex flex-col max-h-[90vh]">
+            <h2 class="text-lg font-bold text-black uppercase border-b-2 border-black pb-2 mb-4 flex justify-between items-center">
+                <span>Raport Miesięczny (Zużycie Farb)</span>
+                <span class="text-sm font-normal print-date-paint-report"></span>
+            </h2>
+            <div class="mb-4 flex gap-4 items-end print-hide">
+                <div>
+                    <label class="block text-xs font-bold text-black mb-1 uppercase">Wybierz miesiąc do wygenerowania raportu</label>
+                    <select id="reportPaintMonthSelector" onchange="renderPaintReport()" class="w-48 border border-black p-1.5 text-sm outline-none bg-yellow-50 focus:bg-white font-bold cursor-pointer"></select>
+                </div>
+            </div>
+            <div class="overflow-auto flex-1 border border-black mb-4">
+                <table class="w-full text-left text-xs whitespace-nowrap">
+                    <thead class="bg-gray-100 text-black font-bold sticky top-0 border-b-2 border-black uppercase">
+                        <tr>
+                            <th class="px-3 py-2 border-r border-black">Jednostka / Projekt</th>
+                            <th class="px-3 py-2 border-r border-black">Rodzaj Farby</th>
+                            <th class="px-3 py-2 border-r border-black text-right">Zużycie Farby [L]</th>
+                            <th class="px-3 py-2 border-r border-black text-right">Rozcieńczalnik [L]</th>
+                            <th class="px-3 py-2 text-right">Suma Zużycia [L]</th>
+                        </tr>
+                    </thead>
+                    <tbody id="paintReportTableBody" class="divide-y divide-black bg-white"></tbody>
+                    <tfoot id="paintReportTableFoot" class="bg-gray-100 font-bold sticky bottom-0 border-t-2 border-black uppercase"></tfoot>
+                </table>
+            </div>
+            <div class="flex justify-end gap-3 shrink-0 pt-2 border-t border-black print-hide">
+                <button onclick="closePaintReportModal()" class="bg-gray-200 text-black border border-black hover:bg-gray-300 font-bold py-2 px-4 uppercase text-sm transition shadow-md">Zamknij</button>
+                <button onclick="printPaintReport()" class="bg-black text-white border border-black hover:bg-gray-800 font-bold py-2 px-4 uppercase text-sm transition shadow-md">Drukuj Raport</button>
+            </div>
+        </div>
+    </div>
+
     <!-- MAIN APP CONTAINER -->
     <div id="mainAppContainer" class="w-full mx-auto space-y-4 locked-ui">
         <!-- HEADER -->
@@ -415,7 +451,8 @@
                             <h2 id="dailySelectedPaintTitle" class="text-lg font-bold text-blue-600 uppercase tracking-wider">WYBIERZ FARBĘ</h2>
                         </div>
                         <div class="flex items-center gap-2">
-                            <button onclick="openMonthlyReportModal()" class="border border-black px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs uppercase shadow-sm transition-colors">RAPORT MIESIĘCZNY</button>
+                            <button onclick="openMonthlyReportModal()" class="border border-black px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs uppercase shadow-sm transition-colors">RAPORT MIESIĘCZNY (M2)</button>
+                            <button onclick="openPaintReportModal()" class="border border-black px-3 py-1 bg-green-600 hover:bg-green-700 text-white font-bold text-xs uppercase shadow-sm transition-colors ml-2">RAPORT FARB</button>
                             <button onclick="printDailyLedger()" class="bg-black text-white px-3 py-1 font-bold text-xs uppercase shadow-md hover:bg-gray-800 ml-2">DRUKUJ (PDF)</button>
                         </div>
                     </div>
@@ -3810,6 +3847,147 @@
                     <td class="px-3 py-2 border-r border-black text-right text-black">${window.formatNumber(totalProfile, 2)}</td>
                     <td class="px-3 py-2 border-r border-black text-right text-blue-800">${window.formatNumber(totalArea, 2)}</td>
                     <td class="px-3 py-2 text-right text-green-800">${window.formatNumber(totalCost, 2)}</td>
+                </tr>
+            `;
+        };
+
+        window.openPaintReportModal = function() {
+            const modal = document.getElementById('paintReportModal');
+            const selector = document.getElementById('reportPaintMonthSelector');
+            
+            const availableMonths = new Set();
+            printHistory.forEach(h => {
+                if (h.isError || !h.date) return;
+                const dateObj = window.parsePlDate(h.date);
+                if (!isNaN(dateObj.getTime())) {
+                    const yyyy = dateObj.getFullYear();
+                    const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+                    availableMonths.add(`${yyyy}-${mm}`);
+                }
+            });
+
+            let sortedMonths = Array.from(availableMonths).sort().reverse();
+            
+            const now = new Date();
+            const currYyyy = now.getFullYear();
+            const currMm = String(now.getMonth() + 1).padStart(2, '0');
+            const currVal = `${currYyyy}-${currMm}`;
+            
+            if (sortedMonths.length === 0 && !availableMonths.has(currVal)) {
+                sortedMonths.push(currVal);
+            }
+
+            selector.innerHTML = '';
+            sortedMonths.forEach(mVal => {
+                const [y, m] = mVal.split('-');
+                const opt = document.createElement('option');
+                opt.value = mVal;
+                opt.textContent = `${m}.${y}`;
+                selector.appendChild(opt);
+            });
+
+            if (sortedMonths.length > 0) {
+                selector.value = sortedMonths[0];
+            }
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            window.renderPaintReport();
+        };
+
+        window.closePaintReportModal = function() {
+            const modal = document.getElementById('paintReportModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        };
+
+        window.printPaintReport = function() {
+            document.body.classList.add('print-paint-report');
+            window.print();
+            document.body.classList.remove('print-paint-report');
+        };
+
+        window.renderPaintReport = function() {
+            const tbody = document.getElementById('paintReportTableBody');
+            const tfoot = document.getElementById('paintReportTableFoot');
+            const monthVal = document.getElementById('reportPaintMonthSelector').value;
+            const printDateSpan = document.querySelector('.print-date-paint-report');
+            
+            if (!tbody || !tfoot || !monthVal) return;
+            
+            const [fYear, fMonth] = monthVal.split('-');
+            const reportMonthLabel = `${fMonth}.${fYear}`;
+            if (printDateSpan) printDateSpan.textContent = `Podsumowanie za miesiąc: ${reportMonthLabel}`;
+
+            const units = {};
+            let totalPaintAll = 0, totalThinnerAll = 0;
+
+            printHistory.forEach(h => {
+                if (h.isError) return;
+                const rowDate = window.parsePlDate(h.date);
+                if (rowDate.getFullYear() === parseInt(fYear) && (rowDate.getMonth() + 1) === parseInt(fMonth)) {
+                    const pName = (h.projectName || h.unit || "BRAK NAZWY").toUpperCase().trim();
+                    if (!units[pName]) {
+                        units[pName] = {};
+                    }
+                    
+                    if (h.brandStats) {
+                        Object.keys(h.brandStats).forEach(paintId => {
+                            const stat = h.brandStats[paintId];
+                            if (stat.vol > 0 || stat.thinner > 0) {
+                                if (!units[pName][paintId]) {
+                                    units[pName][paintId] = { paint: 0, thinner: 0 };
+                                }
+                                units[pName][paintId].paint += (stat.vol || 0);
+                                units[pName][paintId].thinner += (stat.thinner || 0);
+                                
+                                totalPaintAll += (stat.vol || 0);
+                                totalThinnerAll += (stat.thinner || 0);
+                            }
+                        });
+                    }
+                }
+            });
+
+            tbody.innerHTML = '';
+            const unitKeys = Object.keys(units).sort();
+            
+            if (unitKeys.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="px-3 py-4 text-center text-gray-500 font-bold uppercase">Brak zapisanych zużyć farb dla wybranego miesiąca.</td></tr>`;
+                tfoot.innerHTML = '';
+                return;
+            }
+
+            unitKeys.forEach(u => {
+                const paintsData = units[u];
+                const paintKeys = Object.keys(paintsData).sort();
+                
+                if (paintKeys.length === 0) return;
+
+                paintKeys.forEach((paintId, idx) => {
+                    const data = paintsData[paintId];
+                    const isFirst = idx === 0;
+                    const rowSpanAttr = isFirst && paintKeys.length > 1 ? `rowspan="${paintKeys.length}"` : '';
+                    const unitCellHtml = isFirst ? `<td ${rowSpanAttr} class="px-3 py-2 border-r border-b border-black font-bold text-black align-middle">${u}</td>` : '';
+                    
+                    tbody.innerHTML += `
+                        <tr class="hover:bg-gray-50 transition-colors">
+                            ${unitCellHtml}
+                            <td class="px-3 py-2 border-r border-b border-black font-bold text-black">${paintId}</td>
+                            <td class="px-3 py-2 border-r border-b border-black text-right text-blue-700 font-bold">${window.formatNumber(data.paint, 2)}</td>
+                            <td class="px-3 py-2 border-r border-b border-black text-right text-yellow-600 font-bold">${window.formatNumber(data.thinner, 2)}</td>
+                            <td class="px-3 py-2 border-b border-black text-right font-bold text-green-700">${window.formatNumber(data.paint + data.thinner, 2)}</td>
+                        </tr>
+                    `;
+                });
+            });
+
+            tfoot.innerHTML = `
+                <tr>
+                    <td colspan="2" class="px-3 py-2 border-r border-black text-right">SUMA CAŁKOWITA [L]:</td>
+                    <td class="px-3 py-2 border-r border-black text-right text-blue-800">${window.formatNumber(totalPaintAll, 2)}</td>
+                    <td class="px-3 py-2 border-r border-black text-right text-yellow-700">${window.formatNumber(totalThinnerAll, 2)}</td>
+                    <td class="px-3 py-2 text-right text-green-800">${window.formatNumber(totalPaintAll + totalThinnerAll, 2)}</td>
                 </tr>
             `;
         };
