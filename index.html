@@ -49,6 +49,11 @@
             body.print-history #view-history .print-hide { display: none !important; }
             body.print-history .protocol-header-history { display: block !important; }
 
+            body.print-monthly-report header, body.print-monthly-report #mainTabsContainer, body.print-monthly-report #mainAppContainer { display: none !important; }
+            body.print-monthly-report #monthlyReportModal { display: flex !important; position: static !important; inset: auto !important; width: 100% !important; max-width: none !important; max-height: none !important; background: transparent !important; box-shadow: none !important; border: none !important; }
+            body.print-monthly-report #monthlyReportModal > div { padding: 0 !important; border: none !important; box-shadow: none !important; }
+            body.print-monthly-report .print-hide { display: none !important; }
+
             .page-break { page-break-before: always; break-before: page; margin-top: 20px !important;}
             .break-inside-avoid { page-break-inside: avoid; break-inside: avoid; }
             
@@ -285,6 +290,41 @@
         </div>
     </div>
 
+    <!-- MODAL RAPORT MIESIĘCZNY -->
+    <div id="monthlyReportModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 z-[3500] hidden items-center justify-center print-hide">
+        <div class="bg-white border-2 border-black p-6 w-full max-w-4xl shadow-2xl relative flex flex-col max-h-[90vh]">
+            <h2 class="text-lg font-bold text-black uppercase border-b-2 border-black pb-2 mb-4 flex justify-between items-center">
+                <span>Raport Miesięczny (Zestawienie Zbiorcze)</span>
+                <span class="text-sm font-normal print-date-report"></span>
+            </h2>
+            <div class="mb-4 flex gap-4 items-end print-hide">
+                <div>
+                    <label class="block text-xs font-bold text-black mb-1 uppercase">Wybierz miesiąc do wygenerowania raportu</label>
+                    <select id="reportMonthSelector" onchange="renderMonthlyReport()" class="w-48 border border-black p-1.5 text-sm outline-none bg-yellow-50 focus:bg-white font-bold cursor-pointer"></select>
+                </div>
+            </div>
+            <div class="overflow-auto flex-1 border border-black mb-4">
+                <table class="w-full text-left text-xs whitespace-nowrap">
+                    <thead class="bg-gray-100 text-black font-bold sticky top-0 border-b-2 border-black uppercase">
+                        <tr>
+                            <th class="px-3 py-2 border-r border-black">Jednostka / Projekt</th>
+                            <th class="px-3 py-2 border-r border-black text-right">Blachy [m²]</th>
+                            <th class="px-3 py-2 border-r border-black text-right">Profile [m²]</th>
+                            <th class="px-3 py-2 border-r border-black text-right">Suma Pow. [m²]</th>
+                            <th class="px-3 py-2 text-right">Koszty Całkowite [PLN]</th>
+                        </tr>
+                    </thead>
+                    <tbody id="monthlyReportTableBody" class="divide-y divide-black bg-white"></tbody>
+                    <tfoot id="monthlyReportTableFoot" class="bg-gray-100 font-bold sticky bottom-0 border-t-2 border-black uppercase"></tfoot>
+                </table>
+            </div>
+            <div class="flex justify-end gap-3 shrink-0 pt-2 border-t border-black print-hide">
+                <button onclick="closeMonthlyReportModal()" class="bg-gray-200 text-black border border-black hover:bg-gray-300 font-bold py-2 px-4 uppercase text-sm transition shadow-md">Zamknij</button>
+                <button onclick="printMonthlyReport()" class="bg-black text-white border border-black hover:bg-gray-800 font-bold py-2 px-4 uppercase text-sm transition shadow-md">Drukuj Raport</button>
+            </div>
+        </div>
+    </div>
+
     <!-- MAIN APP CONTAINER -->
     <div id="mainAppContainer" class="w-full mx-auto space-y-4 locked-ui">
         <!-- HEADER -->
@@ -375,9 +415,7 @@
                             <h2 id="dailySelectedPaintTitle" class="text-lg font-bold text-blue-600 uppercase tracking-wider">WYBIERZ FARBĘ</h2>
                         </div>
                         <div class="flex items-center gap-2">
-                            <label class="text-xs font-bold uppercase">POKAŻ MIESIĄC:</label>
-                            <input type="month" id="dailyFilterMonth" onchange="renderDailyLedger()" class="border border-black p-1 text-xs outline-none bg-white">
-                            <button onclick="document.getElementById('dailyFilterMonth').value=''; renderDailyLedger();" class="border border-black px-3 py-1 bg-white font-bold text-xs uppercase shadow-sm hover:bg-gray-200">WSZYSTKO</button>
+                            <button onclick="openMonthlyReportModal()" class="border border-black px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs uppercase shadow-sm transition-colors">RAPORT MIESIĘCZNY</button>
                             <button onclick="printDailyLedger()" class="bg-black text-white px-3 py-1 font-bold text-xs uppercase shadow-md hover:bg-gray-800 ml-2">DRUKUJ (PDF)</button>
                         </div>
                     </div>
@@ -3606,8 +3644,7 @@
                 ev.pozostalo = currentBalance;
             });
 
-            let filteredEvents = events; const filterMonth = document.getElementById('dailyFilterMonth').value;
-            if (filterMonth) { const [fYear, fMonth] = filterMonth.split('-'); filteredEvents = events.filter(ev => ev.dateObj.getFullYear() === parseInt(fYear) && (ev.dateObj.getMonth() + 1) === parseInt(fMonth)); }
+            let filteredEvents = events;
 
             tbody.innerHTML = ''; let sumDostawa = 0, sumUtylizacja = 0, sumZuzycie = 0, sumM2 = 0;
             if (filteredEvents.length === 0) { tbody.innerHTML = `<tr><td colspan="10" class="p-6 font-bold uppercase text-gray-500 text-center">Brak zapisanych działań dla wybranej farby.</td></tr>`; tfoot.innerHTML = ''; return; }
@@ -3650,6 +3687,131 @@
             });
 
             tfoot.innerHTML = `<tr><td colspan="2" class="px-2 py-1.5 border-r border-black text-right uppercase text-black font-bold bg-gray-200">SUMA WIDOCZNYCH:</td><td class="px-2 py-1.5 border-r border-black text-green-700 font-bold text-sm bg-gray-200">${window.formatNumber(sumDostawa)}</td><td class="px-2 py-1.5 border-r border-black text-red-600 font-bold text-sm bg-gray-200">${window.formatNumber(sumUtylizacja)}</td><td class="px-2 py-1.5 border-r border-black font-bold text-sm bg-gray-200 text-blue-700">${window.formatNumber(sumZuzycie)}</td><td class="px-2 py-1.5 border-r border-black font-bold bg-yellow-100 text-black text-sm">${window.formatNumber(filteredEvents[filteredEvents.length-1].pozostalo)}</td><td class="px-2 py-1.5 border-r border-black text-blue-700 font-bold text-sm bg-gray-200">${window.formatNumber(sumM2)}</td><td colspan="3" class="px-2 py-1.5 bg-gray-200 border-black print-hide"></td></tr>`;
+        };
+
+        window.openMonthlyReportModal = function() {
+            const modal = document.getElementById('monthlyReportModal');
+            const selector = document.getElementById('reportMonthSelector');
+            
+            const availableMonths = new Set();
+            printHistory.forEach(h => {
+                if (h.isError || !h.date) return;
+                const dateObj = window.parsePlDate(h.date);
+                if (!isNaN(dateObj.getTime())) {
+                    const yyyy = dateObj.getFullYear();
+                    const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+                    availableMonths.add(`${yyyy}-${mm}`);
+                }
+            });
+
+            let sortedMonths = Array.from(availableMonths).sort().reverse();
+            
+            const now = new Date();
+            const currYyyy = now.getFullYear();
+            const currMm = String(now.getMonth() + 1).padStart(2, '0');
+            const currVal = `${currYyyy}-${currMm}`;
+            
+            if (sortedMonths.length === 0 && !availableMonths.has(currVal)) {
+                sortedMonths.push(currVal);
+            }
+
+            selector.innerHTML = '';
+            sortedMonths.forEach(mVal => {
+                const [y, m] = mVal.split('-');
+                const opt = document.createElement('option');
+                opt.value = mVal;
+                opt.textContent = `${m}.${y}`;
+                selector.appendChild(opt);
+            });
+
+            if (sortedMonths.length > 0) {
+                selector.value = sortedMonths[0];
+            }
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            window.renderMonthlyReport();
+        };
+
+        window.closeMonthlyReportModal = function() {
+            const modal = document.getElementById('monthlyReportModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        };
+
+        window.printMonthlyReport = function() {
+            document.body.classList.add('print-monthly-report');
+            window.print();
+            document.body.classList.remove('print-monthly-report');
+        };
+
+        window.renderMonthlyReport = function() {
+            const tbody = document.getElementById('monthlyReportTableBody');
+            const tfoot = document.getElementById('monthlyReportTableFoot');
+            const monthVal = document.getElementById('reportMonthSelector').value;
+            const printDateSpan = document.querySelector('.print-date-report');
+            
+            if (!tbody || !tfoot || !monthVal) return;
+            
+            const [fYear, fMonth] = monthVal.split('-');
+            const reportMonthLabel = `${fMonth}.${fYear}`;
+            if (printDateSpan) printDateSpan.textContent = `Podsumowanie za miesiąc: ${reportMonthLabel}`;
+
+            const units = {};
+            let totalBlachy = 0, totalProfile = 0, totalArea = 0, totalCost = 0;
+
+            // Iteracja po wszystkich historycznych wpisach
+            printHistory.forEach(h => {
+                if (h.isError) return;
+                const rowDate = window.parsePlDate(h.date);
+                if (rowDate.getFullYear() === parseInt(fYear) && (rowDate.getMonth() + 1) === parseInt(fMonth)) {
+                    const pName = (h.projectName || h.unit || "BRAK NAZWY").toUpperCase().trim();
+                    if (!units[pName]) {
+                        units[pName] = { blachy: 0, profile: 0, area: 0, cost: 0 };
+                    }
+                    units[pName].blachy += (h.areaBlachy || 0);
+                    units[pName].profile += (h.areaProfile || 0);
+                    units[pName].area += (h.area || 0);
+                    units[pName].cost += (h.cost || 0);
+                    
+                    totalBlachy += (h.areaBlachy || 0);
+                    totalProfile += (h.areaProfile || 0);
+                    totalArea += (h.area || 0);
+                    totalCost += (h.cost || 0);
+                }
+            });
+
+            tbody.innerHTML = '';
+            const unitKeys = Object.keys(units).sort();
+            
+            if (unitKeys.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="px-3 py-4 text-center text-gray-500 font-bold uppercase">Brak zapisanych kalkulacji dla wybranego miesiąca.</td></tr>`;
+                tfoot.innerHTML = '';
+                return;
+            }
+
+            unitKeys.forEach(u => {
+                const data = units[u];
+                tbody.innerHTML += `
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="px-3 py-2 border-r border-b border-black font-bold text-black">${u}</td>
+                        <td class="px-3 py-2 border-r border-b border-black text-right text-black">${window.formatNumber(data.blachy, 2)}</td>
+                        <td class="px-3 py-2 border-r border-b border-black text-right text-black">${window.formatNumber(data.profile, 2)}</td>
+                        <td class="px-3 py-2 border-r border-b border-black text-right font-bold text-blue-700">${window.formatNumber(data.area, 2)}</td>
+                        <td class="px-3 py-2 border-b border-black text-right font-bold text-green-700">${window.formatNumber(data.cost, 2)}</td>
+                    </tr>
+                `;
+            });
+
+            tfoot.innerHTML = `
+                <tr>
+                    <td class="px-3 py-2 border-r border-black text-right">SUMA CAŁKOWITA:</td>
+                    <td class="px-3 py-2 border-r border-black text-right text-black">${window.formatNumber(totalBlachy, 2)}</td>
+                    <td class="px-3 py-2 border-r border-black text-right text-black">${window.formatNumber(totalProfile, 2)}</td>
+                    <td class="px-3 py-2 border-r border-black text-right text-blue-800">${window.formatNumber(totalArea, 2)}</td>
+                    <td class="px-3 py-2 text-right text-green-800">${window.formatNumber(totalCost, 2)}</td>
+                </tr>
+            `;
         };
     </script>
 </body>
