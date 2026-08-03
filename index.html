@@ -328,31 +328,21 @@
             <button id="tab-projects" onclick="switchTab('projects')" class="px-2 py-1.5 border-2 border-transparent hover:border-black border-b-0 text-black bg-white text-xs font-bold focus:outline-none whitespace-nowrap z-10">
                 PROJEKTY
             </button>
-            
-            <!-- MENU ROZWIJANE DLA POZOSTAŁYCH ZAKŁADEK -->
-            <div class="relative inline-block z-20">
-                <button id="btnMoreTabs" onclick="toggleMoreTabs()" class="px-3 py-1.5 border-2 border-transparent hover:border-black border-b-0 text-black bg-white text-xs font-bold focus:outline-none whitespace-nowrap mb-[1px]">
-                    ...
-                </button>
-                
-                <div id="moreTabsMenu" class="hidden absolute left-0 top-full mt-[2px] bg-white border-2 border-black shadow-xl flex flex-col min-w-[150px]">
-                    <button id="tab-db" onclick="switchTab('db'); toggleMoreTabs(false)" class="px-3 py-2 text-left hover:bg-gray-200 text-black text-xs font-bold focus:outline-none whitespace-nowrap border-b border-gray-200">
-                        BAZA PROFILI
-                    </button>
-                    <button id="tab-colors" onclick="switchTab('colors'); toggleMoreTabs(false)" class="px-3 py-2 text-left hover:bg-gray-200 text-black text-xs font-bold focus:outline-none whitespace-nowrap border-b border-gray-200">
-                        KOLORYSTYKA
-                    </button>
-                    <button id="tab-costs" onclick="switchTab('costs'); toggleMoreTabs(false)" class="px-3 py-2 text-left hover:bg-gray-200 text-black text-xs font-bold focus:outline-none whitespace-nowrap border-b border-gray-200">
-                        WYDAJNOŚĆ
-                    </button>
-                    <button id="tab-users" onclick="switchTab('users'); toggleMoreTabs(false)" class="px-3 py-2 text-left hover:bg-gray-200 text-black text-xs font-bold focus:outline-none whitespace-nowrap border-b border-gray-200">
-                        USTAWIENIA
-                    </button>
-                    <button id="tab-archive" onclick="switchTab('archive'); toggleMoreTabs(false)" class="px-3 py-2 text-left hover:bg-gray-200 text-black text-xs font-bold focus:outline-none whitespace-nowrap">
-                        ARCHIWUM
-                    </button>
-                </div>
-            </div>
+            <button id="tab-db" onclick="switchTab('db')" class="px-2 py-1.5 border-2 border-transparent hover:border-black border-b-0 text-black bg-white text-xs font-bold focus:outline-none whitespace-nowrap z-10">
+                BAZA PROFILI
+            </button>
+            <button id="tab-colors" onclick="switchTab('colors')" class="px-2 py-1.5 border-2 border-transparent hover:border-black border-b-0 text-black bg-white text-xs font-bold focus:outline-none whitespace-nowrap z-10">
+                KOLORYSTYKA
+            </button>
+            <button id="tab-costs" onclick="switchTab('costs')" class="px-2 py-1.5 border-2 border-transparent hover:border-black border-b-0 text-black bg-white text-xs font-bold focus:outline-none whitespace-nowrap z-10">
+                WYDAJNOŚĆ
+            </button>
+            <button id="tab-users" onclick="switchTab('users')" class="px-2 py-1.5 border-2 border-transparent hover:border-black border-b-0 text-black bg-white text-xs font-bold focus:outline-none whitespace-nowrap z-10">
+                USTAWIENIA
+            </button>
+            <button id="tab-archive" onclick="switchTab('archive')" class="px-2 py-1.5 border-2 border-transparent hover:border-black border-b-0 text-black bg-white text-xs font-bold focus:outline-none whitespace-nowrap z-10">
+                ARCHIWUM
+            </button>
         </div>
 
         <!-- WIDOK: ROZLICZENIE DZIENNE -->
@@ -391,16 +381,16 @@
                         <table class="w-full text-center text-[11px] md:text-xs whitespace-nowrap bg-white">
                             <thead class="bg-gray-100 text-black font-bold uppercase sticky top-0 border-b-2 border-black z-10">
                                 <tr>
-                                    <th class="px-2 py-3 border-r border-black">DATA</th>
-                                    <th class="px-2 py-3 border-r border-black">JEDNOSTKA</th>
-                                    <th class="px-2 py-3 border-r border-black text-green-700">WYDANIE [L]</th>
-                                    <th class="px-2 py-3 border-r border-black text-red-600">UTYLIZACJA [L]</th>
-                                    <th class="px-2 py-3 border-r border-black text-blue-700">ZUŻYCIE [L]</th>
-                                    <th class="px-2 py-3 border-r border-black bg-yellow-100">POZOSTAŁO [L]</th>
-                                    <th class="px-2 py-3 border-r border-black text-blue-700">ILOŚĆ M2</th>
-                                    <th class="px-2 py-3 border-r border-black">RODZAJ MATERIAŁU</th>
-                                    <th class="px-2 py-3 border-r border-black">KALKULACJA</th>
-                                    <th class="px-2 py-3 print-hide">AKCJE</th>
+                                    <th class="px-2 py-1 border-r border-black">DATA</th>
+                                    <th class="px-2 py-1 border-r border-black">JEDNOSTKA</th>
+                                    <th class="px-2 py-1 border-r border-black text-green-700">WYDANIE [L]</th>
+                                    <th class="px-2 py-1 border-r border-black text-red-600">UTYLIZACJA [L]</th>
+                                    <th class="px-2 py-1 border-r border-black text-blue-700">ZUŻYCIE [L]</th>
+                                    <th class="px-2 py-1 border-r border-black bg-yellow-100">POZOSTAŁO [L]</th>
+                                    <th class="px-2 py-1 border-r border-black text-blue-700">ILOŚĆ M2</th>
+                                    <th class="px-2 py-1 border-r border-black">RODZAJ MATERIAŁU</th>
+                                    <th class="px-2 py-1 border-r border-black">KALKULACJA</th>
+                                    <th class="px-2 py-1 print-hide">AKCJE</th>
                                 </tr>
                             </thead>
                             <tbody id="dailyTableBody" class="divide-y divide-black bg-white"></tbody>
@@ -415,7 +405,7 @@
         <div id="view-calc" class="space-y-4 hidden mt-4">
             <div id="previewBanner" class="hidden bg-gray-200 border border-black p-3 flex justify-between items-center print-hide">
                 <span class="font-bold text-black text-sm uppercase">TRYB PODGLĄDU KALKULACJI Z HISTORII (TYLKO DO ODCZYTU I WYDRUKU)</span>
-                <button onclick="exitPreviewMode()" class="bg-black text-white px-4 py-1.5 font-bold text-xs uppercase hover:bg-gray-800 transition">Zakończ podgląd</button>
+                <button onclick="exitPreviewMode()" class="bg-red-600 text-white border border-red-800 px-4 py-1.5 font-bold text-xs uppercase hover:bg-red-700 transition shadow-md">Zakończ podgląd</button>
             </div>
 
             <div id="addFormContainer" class="bg-white p-2 border border-black print-hide">
@@ -543,6 +533,9 @@
                 </div>
 
                 <div id="tableActionsContainer" class="p-3 border-t border-black bg-gray-50 flex justify-end gap-3 print-hide">
+                    <button id="btnCancelEdit" onclick="cancelEditProtocol()" class="bg-gray-200 text-black border border-black hover:bg-gray-300 px-4 py-2 text-sm font-bold transition flex items-center gap-1.5 uppercase hidden">
+                        Anuluj
+                    </button>
                     <button id="btnPrintProtocol" onclick="printProtocol()" class="bg-white border border-black hover:bg-black hover:text-white text-black px-4 py-2 text-sm font-bold transition flex items-center gap-1.5 uppercase">
                         Drukuj
                     </button>
@@ -683,10 +676,14 @@
                     </div>
                 </div>
                 <div class="mt-4 overflow-x-auto">
-                    <table class="w-full max-w-sm text-left text-xs whitespace-nowrap border border-black">
+                    <table class="w-full text-left text-xs whitespace-nowrap border border-black">
                         <thead class="bg-gray-100 text-black font-bold uppercase border-b border-black">
                             <tr>
                                 <th class="px-3 py-2 border-r border-black">Projekt</th>
+                                <th class="px-3 py-2 border-r border-black text-right">Powierzchnia [m²]</th>
+                                <th class="px-3 py-2 border-r border-black text-right">Farba [L]</th>
+                                <th class="px-3 py-2 border-r border-black text-right">Rozcieńczalnik [L]</th>
+                                <th class="px-3 py-2 border-r border-black text-right">Koszt [PLN]</th>
                                 <th class="px-3 py-2 text-center w-32">Akcja</th>
                             </tr>
                         </thead>
@@ -702,10 +699,14 @@
                 <h2 class="text-sm font-bold text-gray-700 mb-3 border-b border-gray-400 pb-1 uppercase">Zarchiwizowane Projekty</h2>
                 <div class="text-xs text-gray-600 mb-4">Poniższe projekty są ukryte z głównych list. Możesz je w każdej chwili przywrócić.</div>
                 <div class="mt-4 overflow-x-auto">
-                    <table class="w-full max-w-sm text-left text-xs whitespace-nowrap border border-gray-400">
+                    <table class="w-full text-left text-xs whitespace-nowrap border border-gray-400">
                         <thead class="bg-gray-200 text-gray-700 font-bold uppercase border-b border-gray-400">
                             <tr>
                                 <th class="px-3 py-2 border-r border-gray-400">Projekt</th>
+                                <th class="px-3 py-2 border-r border-gray-400 text-right">Powierzchnia [m²]</th>
+                                <th class="px-3 py-2 border-r border-gray-400 text-right">Farba [L]</th>
+                                <th class="px-3 py-2 border-r border-gray-400 text-right">Rozcieńczalnik [L]</th>
+                                <th class="px-3 py-2 border-r border-gray-400 text-right">Koszt [PLN]</th>
                                 <th class="px-3 py-2 text-center w-24">Akcja</th>
                             </tr>
                         </thead>
@@ -853,6 +854,15 @@
 
         <!-- WIDOK: USTAWIENIA -->
         <div id="view-users" class="space-y-4 hidden mt-4">
+            <div id="userPreferencesSection" class="bg-blue-50 p-4 border border-black print-hide">
+                <h2 class="text-sm font-bold text-blue-800 mb-1 uppercase">Dostosuj swój widok</h2>
+                <p class="text-xs text-gray-700 mb-3">Zaznacz zakładki, które chcesz widzieć na górnym pasku. Możesz wybierać tylko spośród tych, do których administrator nadał Ci uprawnienia.</p>
+                <div id="userPreferencesGrid" class="flex flex-wrap gap-3 mb-3">
+                    <!-- Dynamicznie ładowane z JS -->
+                </div>
+                <button onclick="saveUserPreferences()" class="bg-blue-600 text-white border border-black hover:bg-blue-800 font-bold py-1.5 px-4 uppercase text-xs transition shadow-sm">Zapisz mój widok</button>
+            </div>
+
             <div id="addUserSection" class="bg-gray-50 p-4 border border-black print-hide hidden">
                 <h2 class="text-sm font-bold text-black mb-1 uppercase">Dodaj użytkownika do listy uprawnień</h2>
                 <p class="text-xs text-gray-600 mb-3">Konta autoryzacyjne (hasła) należy utworzyć bezpośrednio w konsoli Firebase. Tutaj możesz powiązać adres e-mail pracownika, aby nadać mu imię, rolę i konkretne uprawnienia przed jego pierwszym logowaniem.</p>
@@ -996,6 +1006,7 @@
         let currentPreviewProtocolNumber = null;
         window.editingProtocolId = null; 
         window.tempInputData = null; 
+        window.sourceTabForPreview = null;
         window.firebasePermissionDenied = false;
         
         let currentUser = null;
@@ -1440,28 +1451,6 @@
             }
         };
 
-        window.toggleMoreTabs = function(forceClose = false) {
-            const menu = document.getElementById('moreTabsMenu');
-            const btn = document.getElementById('btnMoreTabs');
-            if (forceClose || !menu.classList.contains('hidden')) {
-                menu.classList.add('hidden');
-                btn.classList.remove('border-black', 'border-b-0');
-                btn.classList.add('border-transparent');
-            } else {
-                menu.classList.remove('hidden');
-                btn.classList.add('border-black', 'border-b-0');
-                btn.classList.remove('border-transparent');
-            }
-        };
-
-        document.addEventListener('click', function(event) {
-            const menu = document.getElementById('moreTabsMenu');
-            const btn = document.getElementById('btnMoreTabs');
-            if (menu && !menu.classList.contains('hidden') && !btn.contains(event.target) && !menu.contains(event.target)) {
-                toggleMoreTabs(true);
-            }
-        });
-
         window.switchTab = async function(tabId, bypassCheck = false) {
             if (!bypassCheck) {
                 const calcView = document.getElementById('view-calc');
@@ -1473,19 +1462,13 @@
             }
 
             const views = ['daily', 'calc', 'db', 'colors', 'costs', 'history', 'users', 'projects', 'indusco', 'archive'];
-            const dropdownTabs = ['db', 'colors', 'costs', 'users', 'archive'];
             
             views.forEach(v => {
                 const el = document.getElementById('view-' + v);
                 if(el) { el.classList.add('hidden'); el.classList.remove('block'); }
                 const btn = document.getElementById('tab-' + v);
                 if(btn) {
-                    if (!dropdownTabs.includes(v)) {
-                        btn.className = "px-2 py-1.5 border-2 border-transparent hover:border-black border-b-0 text-black bg-white text-xs font-bold focus:outline-none whitespace-nowrap z-10";
-                    } else {
-                        btn.className = "px-3 py-2 text-left hover:bg-gray-200 text-black text-xs font-bold focus:outline-none whitespace-nowrap border-b border-gray-200";
-                        if (v === 'archive') btn.classList.remove('border-b', 'border-gray-200');
-                    }
+                    btn.className = "px-2 py-1.5 border-2 border-transparent hover:border-black border-b-0 text-black bg-white text-xs font-bold focus:outline-none whitespace-nowrap z-10";
                 }
             });
             
@@ -1493,17 +1476,9 @@
             if(targetEl) { targetEl.classList.remove('hidden'); targetEl.classList.add('block'); }
             
             const targetBtn = document.getElementById('tab-' + tabId);
-            const btnMoreTabs = document.getElementById('btnMoreTabs');
             
             if(targetBtn) {
-                if (!dropdownTabs.includes(tabId)) {
-                    targetBtn.className = "px-2 py-1.5 border-2 border-black border-b-0 bg-white text-black text-xs font-bold focus:outline-none whitespace-nowrap z-10";
-                    if (btnMoreTabs) btnMoreTabs.classList.remove('bg-gray-200');
-                } else {
-                    targetBtn.className = "px-3 py-2 text-left bg-gray-200 text-black text-xs font-bold focus:outline-none whitespace-nowrap border-b border-gray-200";
-                    if (tabId === 'archive') targetBtn.classList.remove('border-b', 'border-gray-200');
-                    if (btnMoreTabs) btnMoreTabs.classList.add('bg-gray-200');
-                }
+                targetBtn.className = "px-2 py-1.5 border-2 border-black border-b-0 bg-white text-black text-xs font-bold focus:outline-none whitespace-nowrap z-10";
             }
             if (tabId === 'daily') { renderDailySidebar(); renderDailyLedger(); }
         };
@@ -1593,6 +1568,7 @@
             updatePrintAuthor(currentUser.name || currentUser.login);
             window.applyUserPermissions();
             window.checkAndShowAlertsOnLogin();
+            window.renderUserPreferences();
             
             renderHistoryTable(); renderInduscoTable(); renderUsersTable();
         };
@@ -1614,6 +1590,31 @@
             document.querySelectorAll('.protocol-author').forEach(el => el.textContent = name || "");
         };
 
+        window.getProjectStats = function(projectName) {
+            let stats = { area: 0, paint: 0, thinner: 0, cost: 0 };
+            const pName = (projectName || "").toUpperCase().trim();
+            if (!pName) return stats;
+
+            printHistory.forEach(h => {
+                if (h.isError) return;
+                const hName = (h.projectName || h.unit || "").toUpperCase().trim();
+                if (hName === pName) {
+                    stats.area += (h.area || 0);
+                    stats.cost += (h.cost || 0);
+                    let thTotal = 0;
+                    if (h.brandStats) {
+                        Object.values(h.brandStats).forEach(bs => {
+                            stats.paint += (bs.vol || 0);
+                            thTotal += (bs.thinner || 0);
+                        });
+                    }
+                    if (h.thinnerVol && thTotal === 0) thTotal = h.thinnerVol;
+                    stats.thinner += thTotal;
+                }
+            });
+            return stats;
+        };
+
         window.renderProjectsList = function() {
             projectsList.sort((a, b) => {
                 const dateA = a.date ? window.parsePlDate(a.date).getTime() : 0;
@@ -1625,11 +1626,16 @@
             if(tbody) {
                 tbody.innerHTML = '';
                 projectsList.forEach((p, i) => {
-                    const dateHtml = p.date ? `<span class="text-[9px] text-gray-500 font-normal normal-case ml-2">(Dodano: ${p.date})</span>` : '';
+                    const stats = window.getProjectStats(p.name);
+                    const dateHtml = p.date ? `<span class="text-[9px] text-gray-500 font-normal normal-case ml-2 block mt-0.5">(Dodano: ${p.date})</span>` : '';
                     tbody.innerHTML += `
                         <tr class="hover:bg-gray-100 transition-colors">
                             <td class="px-3 py-2 border-r border-black font-bold text-black uppercase">${p.name}${dateHtml}</td>
-                            <td class="px-3 py-2 text-center">
+                            <td class="px-3 py-2 border-r border-black text-right text-black font-bold">${window.formatNumber(stats.area, 2)}</td>
+                            <td class="px-3 py-2 border-r border-black text-right text-blue-700 font-bold">${window.formatNumber(stats.paint, 2)}</td>
+                            <td class="px-3 py-2 border-r border-black text-right text-yellow-600 font-bold">${window.formatNumber(stats.thinner, 2)}</td>
+                            <td class="px-3 py-2 border-r border-black text-right text-green-700 font-bold">${window.formatNumber(stats.cost, 2)}</td>
+                            <td class="px-3 py-2 text-center align-middle">
                                 <div class="flex gap-1 justify-center">
                                     <button onclick="archiveProject(${i})" class="text-black font-bold uppercase text-[10px] border border-black px-2 py-0.5 hover:bg-black hover:text-white bg-white">Archiwizuj</button>
                                     <button onclick="removeProject(${i})" class="text-black font-bold uppercase text-[10px] border border-black px-2 py-0.5 hover:bg-black hover:text-white bg-white">Usuń</button>
@@ -1688,15 +1694,20 @@
             if(tbody) {
                 tbody.innerHTML = '';
                 if (archivedProjectsList.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="2" class="px-3 py-2 text-center font-bold text-gray-500 uppercase">Brak zarchiwizowanych projektów.</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="6" class="px-3 py-2 text-center font-bold text-gray-500 uppercase">Brak zarchiwizowanych projektów.</td></tr>`;
                 } else {
                     archivedProjectsList.forEach((p, i) => {
                         let pName = typeof p === 'object' ? p.name : p;
-                        let pDate = typeof p === 'object' && p.date ? ` <span class="text-[10px] text-gray-500 font-normal ml-2 normal-case">(Zarchiwizowano: ${p.date})</span>` : '';
+                        let pDate = typeof p === 'object' && p.date ? ` <span class="text-[10px] text-gray-500 font-normal ml-2 normal-case block mt-0.5">(Zarchiwizowano: ${p.date})</span>` : '';
+                        const stats = window.getProjectStats(pName);
                         tbody.innerHTML += `
                             <tr class="hover:bg-gray-200 transition-colors">
                                 <td class="px-3 py-2 border-r border-gray-400 font-bold uppercase text-gray-700">${pName}${pDate}</td>
-                                <td class="px-3 py-2 text-center">
+                                <td class="px-3 py-2 border-r border-gray-400 text-right text-gray-700 font-bold">${window.formatNumber(stats.area, 2)}</td>
+                                <td class="px-3 py-2 border-r border-gray-400 text-right text-blue-800 font-bold">${window.formatNumber(stats.paint, 2)}</td>
+                                <td class="px-3 py-2 border-r border-gray-400 text-right text-yellow-700 font-bold">${window.formatNumber(stats.thinner, 2)}</td>
+                                <td class="px-3 py-2 border-r border-gray-400 text-right text-green-800 font-bold">${window.formatNumber(stats.cost, 2)}</td>
+                                <td class="px-3 py-2 text-center align-middle">
                                     <button onclick="unarchiveProject(${i})" class="text-black font-bold uppercase text-[10px] border border-black px-2 py-0.5 hover:bg-black hover:text-white bg-white shadow-sm">Przywróć</button>
                                 </td>
                             </tr>
@@ -1735,26 +1746,64 @@
             { id: 'archive', name: 'Archiwum' }
         ];
 
+        window.renderUserPreferences = function() {
+            if (!currentUser) return;
+            const grid = document.getElementById('userPreferencesGrid');
+            if (!grid) return;
+            grid.innerHTML = '';
+            
+            const allTabs = window.AVAILABLE_TABS.map(t => t);
+            allTabs.push({ id: 'users', name: 'Ustawienia' }); 
+            
+            const allowed = currentUser.role === 'admin' ? allTabs.map(t=>t.id) : (currentUser.allowedTabs || allTabs.map(t=>t.id));
+            const preferred = currentUser.preferredTabs || allowed;
+
+            allTabs.forEach(tab => {
+                if (allowed.includes(tab.id)) {
+                    const isChecked = preferred.includes(tab.id);
+                    const isUsersTab = tab.id === 'users';
+                    grid.innerHTML += `
+                        <label class="flex items-center gap-2 cursor-pointer p-1.5 bg-white border border-black hover:bg-blue-100 transition">
+                            <input type="checkbox" class="user-pref-tab-cb w-4 h-4 cursor-pointer" value="${tab.id}" ${isChecked || isUsersTab ? 'checked' : ''} ${isUsersTab ? 'disabled' : ''}>
+                            <span class="text-xs font-bold uppercase text-black">${tab.name}</span>
+                        </label>
+                    `;
+                }
+            });
+        };
+
+        window.saveUserPreferences = async function() {
+            if (!currentUser) return;
+            const checkboxes = document.querySelectorAll('.user-pref-tab-cb');
+            const preferred = Array.from(checkboxes).filter(cb => cb.checked || cb.disabled).map(cb => cb.value); 
+            
+            currentUser.preferredTabs = preferred;
+            
+            const userIndex = appUsers.findIndex(u => u.login === currentUser.login);
+            if (userIndex !== -1) {
+                appUsers[userIndex].preferredTabs = preferred;
+            }
+            
+            window.applyUserPermissions();
+            window.autoSaveToDisk();
+            await window.customAlert("Twój widok zakładek został zaktualizowany.");
+        };
+
         window.applyUserPermissions = function() {
             if (!currentUser) return;
             const allTabs = window.AVAILABLE_TABS.map(t => t.id);
             allTabs.push('users'); 
             
             let allowed = currentUser.role === 'admin' ? allTabs : (currentUser.allowedTabs || allTabs);
-            
+            let visible = currentUser.preferredTabs || allowed;
+
             allTabs.forEach(tab => {
                 const btn = document.getElementById('tab-' + tab);
                 if (btn) {
-                    btn.style.display = allowed.includes(tab) ? '' : 'none';
+                    const isVisible = allowed.includes(tab) && visible.includes(tab);
+                    btn.style.display = isVisible ? 'inline-block' : 'none';
                 }
             });
-            
-            const dropdownTabs = ['db', 'colors', 'costs', 'users', 'archive'];
-            const hasAnyDropdown = dropdownTabs.some(t => allowed.includes(t));
-            const btnMore = document.getElementById('btnMoreTabs');
-            if (btnMore) {
-                btnMore.style.display = hasAnyDropdown ? '' : 'none';
-            }
             
             const activeViews = allTabs.filter(tab => {
                 const v = document.getElementById('view-' + tab);
@@ -1762,10 +1811,10 @@
             });
             
             let targetTab = null;
-            if (activeViews.length > 0 && !allowed.includes(activeViews[0])) {
-                targetTab = allowed.find(t => t !== 'users'); 
+            if (activeViews.length > 0 && (!allowed.includes(activeViews[0]) || !visible.includes(activeViews[0]))) {
+                targetTab = visible.find(t => t !== 'users') || 'users'; 
             } else if (activeViews.length === 0) {
-                targetTab = allowed.find(t => t !== 'users');
+                targetTab = visible.find(t => t !== 'users') || 'users';
             } else if (activeViews.length > 0) {
                 targetTab = activeViews[0];
             }
@@ -2155,6 +2204,8 @@
 
         window.cancelEditMode = function() {
             window.editingProtocolId = null;
+            const btnCancel = document.getElementById('btnCancelEdit');
+            if (btnCancel) btnCancel.classList.add('hidden');
             const saveBtn = document.getElementById('btnSaveToSummary');
             if (saveBtn) {
                 saveBtn.innerHTML = 'Zapisz do Zestawienia';
@@ -2163,6 +2214,21 @@
                 } else {
                     saveBtn.className = "bg-black text-white border border-black hover:bg-gray-800 px-6 py-2 text-sm font-bold transition flex items-center gap-1.5 uppercase shadow-md";
                 }
+            }
+        };
+
+        window.cancelEditProtocol = async function() {
+            if(await customConfirm("Czy na pewno chcesz anulować edycję? Wprowadzone zmiany zostaną porzucone.")) {
+                window.cancelEditMode();
+                inputData = []; 
+                document.getElementById('protocolDateInput').valueAsDate = new Date(); 
+                document.getElementById('protocolDateInput').disabled = false;
+                window.clearAddForm(); 
+                window.calculate();
+                
+                const targetTab = window.sourceTabForPreview || 'history';
+                window.switchTab(targetTab, true);
+                window.sourceTabForPreview = null;
             }
         };
 
@@ -2608,6 +2674,7 @@
             }
             updatePrintHeaders(generatedNumbers.join(', '));
             renderHistoryTable(); window.updateRemanentAdjustments();
+            window.renderProjectsList(); window.renderArchiveList();
             if (document.getElementById('view-daily') && document.getElementById('view-daily').classList.contains('block')) { window.renderDailySidebar(); renderDailyLedger(); }
             autoSaveToDisk();
         };
@@ -2616,6 +2683,14 @@
             if (resultsData.length === 0) { await customAlert("Brak elementów do zapisania!"); return; }
             await saveToSummaryInternal();
             inputData = []; document.getElementById('protocolDateInput').valueAsDate = new Date(); calculate(); clearAddForm();
+            
+            const wasEditing = window.sourceTabForPreview != null;
+            const targetTab = window.sourceTabForPreview || 'history';
+            if (wasEditing) {
+                window.switchTab(targetTab, true);
+                window.sourceTabForPreview = null;
+            }
+            
             await customAlert("Pomyślnie zapisano do Zestawienia Kalkulacji. Formularz został wyczyszczony.");
         };
 
@@ -2633,7 +2708,8 @@
             document.body.classList.add('print-history'); window.print(); document.body.classList.remove('print-history');
         };
 
-        window.loadHistoryItem = async function(id) {
+        window.loadHistoryItem = async function(id, sourceTab = 'history') {
+            window.sourceTabForPreview = sourceTab;
             const entry = printHistory.find(e => e.id.toString() === id.toString());
             if (!entry || !entry.items) { await customAlert("Brak szczegółów dla tej kalkulacji."); return; }
             
@@ -2647,7 +2723,10 @@
             if(inputData.length > 0 && inputData[0].Jednostka) document.getElementById('formJednostka').value = projName;
             else document.getElementById('formJednostka').value = projName;
 
-            document.getElementById('protocolDateInput').value = parsePlDateToISO(entry.date);
+            const dateInput = document.getElementById('protocolDateInput');
+            dateInput.value = parsePlDateToISO(entry.date);
+            dateInput.disabled = true;
+
             isPreviewMode = true; currentPreviewProtocolNumber = entry.protocolNumber || "-";
             
             document.getElementById('addFormContainer').classList.add('hidden'); document.getElementById('previewBanner').classList.remove('hidden'); document.getElementById('previewBanner').classList.add('flex');
@@ -2655,11 +2734,12 @@
             window.switchTab('calc'); window.calculate(); updatePrintAuthor(entry.author || "");
         };
 
-        window.editHistoryItem = async function(id) {
+        window.editHistoryItem = async function(id, sourceTab = 'history') {
             const entry = printHistory.find(e => e.id.toString() === id.toString());
             if (!entry || !entry.items) { await customAlert("Brak szczegółów dla tej kalkulacji."); return; }
             if (inputData.length > 0) { if (!(await customConfirm("Otwarcie kalkulacji do EDYCJI zastąpi obecną, niezapisaną listę w Kalkulatorze. Kontynuować?"))) return; }
             
+            window.sourceTabForPreview = sourceTab;
             window.tempInputData = null; 
             cancelEditMode(); inputData = JSON.parse(JSON.stringify(entry.items));
             let projName = entry.projectName;
@@ -2680,9 +2760,15 @@
                 sel.value = projName;
             }
 
-            document.getElementById('protocolDateInput').value = parsePlDateToISO(entry.date);
+            const dateInput = document.getElementById('protocolDateInput');
+            dateInput.value = parsePlDateToISO(entry.date);
+            dateInput.disabled = false;
+
             isPreviewMode = false; currentPreviewProtocolNumber = entry.protocolNumber || "-"; window.editingProtocolId = id; 
             
+            const btnCancel = document.getElementById('btnCancelEdit');
+            if (btnCancel) btnCancel.classList.remove('hidden');
+
             document.getElementById('addFormContainer').classList.remove('hidden'); document.getElementById('previewBanner').classList.add('hidden'); document.getElementById('previewBanner').classList.remove('flex');
             document.getElementById('tableActionsContainer').classList.remove('hidden');
             
@@ -2691,6 +2777,7 @@
 
         window.exitPreviewMode = function() {
             cancelEditMode(); isPreviewMode = false; currentPreviewProtocolNumber = null;
+            document.getElementById('protocolDateInput').disabled = false;
             if (window.tempInputData) { inputData = window.tempInputData; window.tempInputData = null; } else { inputData = []; }
             document.getElementById('protocolDateInput').valueAsDate = new Date(); clearAddForm(); calculate(); 
             
@@ -2698,7 +2785,9 @@
             document.getElementById('tableActionsContainer').classList.remove('hidden'); 
             if (currentUser) updatePrintAuthor(currentUser.name || currentUser.login);
             
-            window.switchTab('history', true); 
+            const targetTab = window.sourceTabForPreview || 'history';
+            window.switchTab(targetTab, true); 
+            window.sourceTabForPreview = null;
         };
 
         window.toggleSelectAllHistory = function() {
@@ -2717,6 +2806,7 @@
                     const idsToDelete = Array.from(selectedCheckboxes).map(cb => cb.value);
                     printHistory = printHistory.filter(item => !idsToDelete.includes(item.id.toString()));
                     window.renderHistoryTable(); window.updateRemanentAdjustments();
+                    window.renderProjectsList(); window.renderArchiveList();
                     if (document.getElementById('view-daily') && document.getElementById('view-daily').classList.contains('block')) { window.renderDailySidebar(); window.renderDailyLedger(); }
                     autoSaveToDisk(); await customAlert("Pomyślnie usunięto zaznaczone kalkulacje.");
                 }
@@ -2794,7 +2884,7 @@
                 let thTotal = 0; paintTypes.forEach(pt => { if(bs[pt.id]) thTotal += bs[pt.id].thinner || 0; });
                 if (row.thinnerVol && thTotal === 0) thTotal = row.thinnerVol; 
 
-                let actionsHtml = `<div class="flex flex-col gap-1 items-stretch w-16 mx-auto"><button onclick="loadHistoryItem('${row.id}')" class="text-black font-bold border border-black px-1 py-0.5 text-[10px] uppercase hover:bg-black hover:text-white bg-white leading-none">PODGLĄD</button><button onclick="editHistoryItem('${row.id}')" class="text-white bg-blue-600 font-bold border border-black px-1 py-0.5 text-[10px] uppercase hover:bg-blue-800 leading-none">EDYTUJ</button></div>`;
+                let actionsHtml = `<div class="flex flex-col gap-1 items-stretch w-16 mx-auto"><button onclick="loadHistoryItem('${row.id}', 'history')" class="text-black font-bold border border-black px-1 py-0.5 text-[10px] uppercase hover:bg-black hover:text-white bg-white leading-none">PODGLĄD</button><button onclick="editHistoryItem('${row.id}', 'history')" class="text-white bg-blue-600 font-bold border border-black px-1 py-0.5 text-[10px] uppercase hover:bg-blue-800 leading-none">EDYTUJ</button></div>`;
 
                 tr.innerHTML = `${checkboxCell}<td class="px-3 py-1.5 border-r border-b border-black font-bold">${row.protocolNumber || '-'}</td><td class="px-3 py-1.5 border-r border-b border-black font-bold">${row.date}</td><td class="px-3 py-1.5 border-r border-b border-black font-bold uppercase">${row.projectName || '-'}</td><td class="px-3 py-1.5 border-r border-b border-black text-right"><div class="font-bold">${formatNumber(row.area, 2)}</div><div class="text-[9px] text-gray-600 uppercase mt-0.5 whitespace-nowrap">B: ${formatNumber(row.areaBlachy, 2)} | P: ${formatNumber(row.areaProfile, 2)}</div></td>${paintColsHtml}<td class="px-3 py-1.5 border-r border-b border-black text-right font-bold">${formatNumber(thTotal, 2)}</td><td class="px-3 py-1.5 border-r border-b border-black text-right font-bold">${formatNumber(row.cost, 2)}</td><td class="px-3 py-1.5 border-r border-b border-black text-[10px] whitespace-nowrap">${row.author || '-'}</td><td class="px-2 py-1.5 border-b border-black text-center print-hide no-underline align-middle">${actionsHtml}</td>`;
                 tbody.appendChild(tr);
@@ -3407,7 +3497,7 @@
                 let rodzajMat = []; if (p.areaBlachy > 0) rodzajMat.push("BLACHY"); if (p.areaProfile > 0) rodzajMat.push("PROFILE");
                 let rodzajDisplay = "ZUŻYCIE"; if (rodzajMat.length > 0) rodzajDisplay = "ZUŻYCIE: " + rodzajMat.join(" + ");
 
-                if (pVol > 0) events.push({ dateObj: window.parsePlDate(p.date), jednostka: p.projectName || p.unit || '-', wydanie: 0, utylizacja: 0, zuzycie: pVol, m2: p.area || 0, rodzaj: rodzajDisplay, kalkulacja: p.protocolNumber || '-', akcje: `<button onclick="loadHistoryItem('${p.id}')" class="text-[10px] font-bold bg-[#6466f1] text-white border border-black px-2 py-1 uppercase hover:bg-blue-800 print-hide">PODGLĄD</button>`, _rawId: 'pr_' + p.id });
+                if (pVol > 0) events.push({ dateObj: window.parsePlDate(p.date), jednostka: p.projectName || p.unit || '-', wydanie: 0, utylizacja: 0, zuzycie: pVol, m2: p.area || 0, rodzaj: rodzajDisplay, kalkulacja: p.protocolNumber || '-', akcje: `<button onclick="loadHistoryItem('${p.id}', 'daily')" class="text-[10px] font-bold bg-[#6466f1] text-white border border-black px-2 py-1 uppercase hover:bg-blue-800 print-hide">PODGLĄD</button>`, _rawId: 'pr_' + p.id });
             });
 
             events.sort((a, b) => {
@@ -3462,20 +3552,20 @@
                 }
 
                 tbody.innerHTML += `<tr class="hover:bg-gray-50">
-                    <td class="px-2 py-2 border-r border-b border-black font-bold text-black">${window.formatISOToPL(window.dateToISO(ev.dateObj))}</td>
-                    <td class="px-2 py-2 border-r border-b border-black font-bold uppercase">${ev.jednostka}</td>
-                    <td class="px-2 py-2 border-r border-b border-black text-green-700 font-bold">${ev.wydanie > 0 ? window.formatNumber(ev.wydanie) : ''}</td>
-                    <td class="px-2 py-2 border-r border-b border-black text-red-600 font-bold">${ev.utylizacja > 0 ? window.formatNumber(ev.utylizacja) : ''}</td>
-                    <td class="px-2 py-2 border-r border-b border-black font-bold ${zuzycieClass}">${zuzycieText}</td>
-                    <td class="px-2 py-2 border-r border-b border-black font-bold bg-yellow-50 text-black text-sm">${window.formatNumber(ev.pozostalo)}</td>
-                    <td class="px-2 py-2 border-r border-b border-black text-blue-700 font-bold">${ev.m2 > 0 ? window.formatNumber(ev.m2) : ''}</td>
-                    <td class="px-2 py-2 border-r border-b border-black text-gray-700 font-bold uppercase text-[10px]">${ev.rodzaj}</td>
-                    <td class="px-2 py-2 border-r border-b border-black text-gray-700 font-bold text-[10px] uppercase">${ev.kalkulacja}</td>
-                    <td class="px-2 py-2 border-b border-black text-center print-hide">${ev.akcje}</td>
+                    <td class="px-2 py-1 border-r border-b border-black font-bold text-black">${window.formatISOToPL(window.dateToISO(ev.dateObj))}</td>
+                    <td class="px-2 py-1 border-r border-b border-black font-bold uppercase">${ev.jednostka}</td>
+                    <td class="px-2 py-1 border-r border-b border-black text-green-700 font-bold">${ev.wydanie > 0 ? window.formatNumber(ev.wydanie) : ''}</td>
+                    <td class="px-2 py-1 border-r border-b border-black text-red-600 font-bold">${ev.utylizacja > 0 ? window.formatNumber(ev.utylizacja) : ''}</td>
+                    <td class="px-2 py-1 border-r border-b border-black font-bold ${zuzycieClass}">${zuzycieText}</td>
+                    <td class="px-2 py-1 border-r border-b border-black font-bold bg-yellow-50 text-black text-sm">${window.formatNumber(ev.pozostalo)}</td>
+                    <td class="px-2 py-1 border-r border-b border-black text-blue-700 font-bold">${ev.m2 > 0 ? window.formatNumber(ev.m2) : ''}</td>
+                    <td class="px-2 py-1 border-r border-b border-black text-gray-700 font-bold uppercase text-[10px]">${ev.rodzaj}</td>
+                    <td class="px-2 py-1 border-r border-b border-black text-gray-700 font-bold text-[10px] uppercase">${ev.kalkulacja}</td>
+                    <td class="px-2 py-1 border-b border-black text-center print-hide">${ev.akcje}</td>
                 </tr>`;
             });
 
-            tfoot.innerHTML = `<tr><td colspan="2" class="px-2 py-3 border-r border-black text-right uppercase text-black font-bold bg-gray-200">SUMA WIDOCZNYCH:</td><td class="px-2 py-3 border-r border-black text-green-700 font-bold text-sm bg-gray-200">${window.formatNumber(sumDostawa)}</td><td class="px-2 py-3 border-r border-black text-red-600 font-bold text-sm bg-gray-200">${window.formatNumber(sumUtylizacja)}</td><td class="px-2 py-3 border-r border-black font-bold text-sm bg-gray-200 text-blue-700">${window.formatNumber(sumZuzycie)}</td><td class="px-2 py-3 border-r border-black font-bold bg-yellow-100 text-black text-sm">${window.formatNumber(filteredEvents[filteredEvents.length-1].pozostalo)}</td><td class="px-2 py-3 border-r border-black text-blue-700 font-bold text-sm bg-gray-200">${window.formatNumber(sumM2)}</td><td colspan="3" class="px-2 py-3 bg-gray-200 border-black print-hide"></td></tr>`;
+            tfoot.innerHTML = `<tr><td colspan="2" class="px-2 py-1.5 border-r border-black text-right uppercase text-black font-bold bg-gray-200">SUMA WIDOCZNYCH:</td><td class="px-2 py-1.5 border-r border-black text-green-700 font-bold text-sm bg-gray-200">${window.formatNumber(sumDostawa)}</td><td class="px-2 py-1.5 border-r border-black text-red-600 font-bold text-sm bg-gray-200">${window.formatNumber(sumUtylizacja)}</td><td class="px-2 py-1.5 border-r border-black font-bold text-sm bg-gray-200 text-blue-700">${window.formatNumber(sumZuzycie)}</td><td class="px-2 py-1.5 border-r border-black font-bold bg-yellow-100 text-black text-sm">${window.formatNumber(filteredEvents[filteredEvents.length-1].pozostalo)}</td><td class="px-2 py-1.5 border-r border-black text-blue-700 font-bold text-sm bg-gray-200">${window.formatNumber(sumM2)}</td><td colspan="3" class="px-2 py-1.5 bg-gray-200 border-black print-hide"></td></tr>`;
         };
     </script>
 </body>
