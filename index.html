@@ -816,11 +816,11 @@
                 <div class="flex gap-4 mb-6">
                     <div>
                         <label class="block text-xs font-bold text-black mb-1">Blachy</label>
-                        <input type="number" id="costBlachy" step="0.01" min="0" oninput="updateLaborCosts()" class="w-32 border border-black p-1 text-sm outline-none font-bold">
+                        <input type="number" id="costBlachy" step="0.01" min="0" onchange="updateLaborCosts()" class="w-32 border border-black p-1 text-sm outline-none font-bold">
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-black mb-1">Profile i rury</label>
-                        <input type="number" id="costProfile" step="0.01" min="0" oninput="updateLaborCosts()" class="w-32 border border-black p-1 text-sm outline-none font-bold">
+                        <input type="number" id="costProfile" step="0.01" min="0" onchange="updateLaborCosts()" class="w-32 border border-black p-1 text-sm outline-none font-bold">
                     </div>
                 </div>
 
@@ -1035,6 +1035,7 @@
 
         window.hasUnsavedChanges = false;
         window.isSyncing = false;
+        let saveQueuePromise = Promise.resolve();
 
         window.updateSyncUI = function(status) {
             const container = document.getElementById('cloudSyncStatus');
@@ -1228,19 +1229,14 @@
             if (!USE_FIREBASE && !currentFileHandle) return;
             
             window.hasUnsavedChanges = true;
-            if (!window.isSyncing) window.updateSyncUI('pending');
+            window.updateSyncUI('pending');
 
-            const performSave = async () => {
-                if (window.isSyncing) {
-                    clearTimeout(autoSaveTimeout);
-                    autoSaveTimeout = setTimeout(performSave, 2000);
-                    return;
-                }
+            const doSave = async () => {
                 window.isSyncing = true;
                 window.updateSyncUI('syncing');
                 try {
-                    const state = getProjectState();
-                    const cleanState = JSON.parse(JSON.stringify(state)); // Oczyszczanie z wartości undefined
+                    const state = window.getProjectState();
+                    const cleanState = JSON.parse(JSON.stringify(state)); 
                     if (USE_FIREBASE) {
                         if (window.firebaseDb && window.dbSet && window.dbRef) {
                             await window.dbSet(window.dbRef(window.firebaseDb, 'appState'), cleanState);
@@ -1265,11 +1261,16 @@
             };
 
             if (immediate) {
-                clearTimeout(autoSaveTimeout);
-                await performSave();
+                clearTimeout(window.autoSaveTimeout);
+                // Czekamy na ewentualny trwający zapis i wykonujemy natychmiast nowy
+                saveQueuePromise = saveQueuePromise.then(doSave);
+                await saveQueuePromise;
             } else {
-                clearTimeout(autoSaveTimeout);
-                autoSaveTimeout = setTimeout(performSave, 2000); 
+                clearTimeout(window.autoSaveTimeout);
+                // Opóźnienie 2s, dodajemy do kolejki
+                window.autoSaveTimeout = setTimeout(() => {
+                    saveQueuePromise = saveQueuePromise.then(doSave);
+                }, 2000); 
             }
         };
 
@@ -1467,7 +1468,6 @@
                 
                 if (projectData.paintTypes) {
                     paintTypes = projectData.paintTypes;
-                    paintTypes = paintTypes.filter(p => p.id !== 'INNY');
                     paintTypes.forEach(p => { if (!p.fallbacks) p.fallbacks = {}; }); 
                     
                     let ip = paintTypes.find(p => p.id === 'INTERPLATE');
@@ -2076,13 +2076,13 @@
                             ${fallbacksHtml}
                         </td>
                         <td class="px-3 py-1.5 border-r border-black text-center">
-                            <input type="number" step="0.1" min="0.1" value="${pt.yieldBlachy}" oninput="updatePaintParam('${pt.id}', 'yieldBlachy', this.value)" class="w-20 text-center border border-transparent hover:border-black focus:border-black outline-none bg-transparent focus:bg-white font-bold text-black px-1 py-0.5 transition-all">
+                            <input type="number" step="0.1" min="0.1" value="${pt.yieldBlachy}" onchange="updatePaintParam('${pt.id}', 'yieldBlachy', this.value)" class="w-20 text-center border border-transparent hover:border-black focus:border-black outline-none bg-transparent focus:bg-white font-bold text-black px-1 py-0.5 transition-all">
                         </td>
                         <td class="px-3 py-1.5 border-r border-black text-center">
-                            <input type="number" step="0.1" min="0.1" value="${pt.yieldProfile}" oninput="updatePaintParam('${pt.id}', 'yieldProfile', this.value)" class="w-20 text-center border border-transparent hover:border-black focus:border-black outline-none bg-transparent focus:bg-white font-bold text-black px-1 py-0.5 transition-all">
+                            <input type="number" step="0.1" min="0.1" value="${pt.yieldProfile}" onchange="updatePaintParam('${pt.id}', 'yieldProfile', this.value)" class="w-20 text-center border border-transparent hover:border-black focus:border-black outline-none bg-transparent focus:bg-white font-bold text-black px-1 py-0.5 transition-all">
                         </td>
                         <td class="px-3 py-1.5 border-r border-black text-center">
-                            <input type="number" step="1" min="0" value="${pt.thinnerPct}" oninput="updatePaintParam('${pt.id}', 'thinnerPct', this.value)" class="w-16 text-center border border-transparent hover:border-black focus:border-black outline-none bg-transparent focus:bg-white font-bold text-black px-1 py-0.5 transition-all">
+                            <input type="number" step="1" min="0" value="${pt.thinnerPct}" onchange="updatePaintParam('${pt.id}', 'thinnerPct', this.value)" class="w-16 text-center border border-transparent hover:border-black focus:border-black outline-none bg-transparent focus:bg-white font-bold text-black px-1 py-0.5 transition-all">
                         </td>
                         <td class="px-3 py-1.5 text-center border-black">
                             <div class="flex flex-col gap-1 items-center w-16 mx-auto">
