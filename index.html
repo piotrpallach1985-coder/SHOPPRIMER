@@ -291,7 +291,7 @@
         <header class="bg-white border border-black p-4 flex flex-col md:flex-row justify-between items-center gap-3 rounded-none">
             <div>
                 <h1 class="text-xl md:text-2xl font-bold text-black flex items-center gap-2 uppercase tracking-wide">
-                    SHOPPRIMER <span class="bg-black text-white px-2 py-0.5 text-sm ml-2">WEB v.2.0</span>
+                    SHOPPRIMER <span class="bg-black text-white px-2 py-0.5 text-sm ml-2">WEB v.1.1</span>
                     <span id="welcomeMessage" class="hidden text-sm font-normal normal-case text-gray-600 ml-2 print-hide">
                         WITAJ: <span id="welcomeName" class="font-bold text-black uppercase"></span>
                     </span>
@@ -1192,11 +1192,11 @@
             };
         };
 
-        window.autoSaveToDisk = async function() {
+        window.autoSaveToDisk = async function(immediate = false) {
             if (window.firebasePermissionDenied) return;
             if (!USE_FIREBASE && !currentFileHandle) return;
-            clearTimeout(autoSaveTimeout);
-            autoSaveTimeout = setTimeout(async () => {
+            
+            const performSave = async () => {
                 try {
                     const state = getProjectState();
                     if (USE_FIREBASE) {
@@ -1214,7 +1214,15 @@
                 } catch (e) {
                     console.warn("Autozapis w tle nieudany.", e);
                 }
-            }, 2000); 
+            };
+
+            if (immediate) {
+                clearTimeout(autoSaveTimeout);
+                await performSave();
+            } else {
+                clearTimeout(autoSaveTimeout);
+                autoSaveTimeout = setTimeout(performSave, 2000); 
+            }
         };
 
         window.loadDataFromFirebase = async function() {
@@ -1503,6 +1511,8 @@
 
         window.handleLogout = async function() {
             cancelEditMode();
+            currentUser = null;
+            try { sessionStorage.removeItem('loggedInUser'); } catch(e){}
             try {
                 if (window.firebaseAuth) {
                     await window.firebaseSignOut(window.firebaseAuth);
@@ -1510,10 +1520,18 @@
             } catch (error) {
                 console.error("Błąd wylogowania", error);
             }
+            document.getElementById('loginUsername').value = '';
+            document.getElementById('loginPassword').value = '';
+            document.getElementById('loginOverlay').classList.remove('hidden');
+            document.getElementById('loginOverlay').classList.add('flex');
+            document.getElementById('mainAppContainer').classList.add('locked-ui');
+            updatePrintAuthor("");
+            renderHistoryTable(); renderInduscoTable();
+            const welcomeMsg = document.getElementById('welcomeMessage');
+            if (welcomeMsg) welcomeMsg.classList.add('hidden');
         };
 
         window.handleUserAuthenticated = async function(firebaseUser) {
-            // TWARDA BLOKADA: Jeśli sesja nie ma e-maila (np. uszkodzony token lub logowanie anonimowe), wymuś wylogowanie
             if (!firebaseUser || !firebaseUser.email) {
                 console.warn("Wykryto sesję bez adresu e-mail. Wymuszanie wylogowania.");
                 try { await window.firebaseSignOut(window.firebaseAuth); } catch(e){}
@@ -1523,31 +1541,28 @@
             const userLogin = firebaseUser.email;
             let foundUser = appUsers.find(u => u.login === userLogin);
             
-            const isPiotr = userLogin === 'piotr.pallach@crist.com.pl';
-            const hasRealAdmin = appUsers.some(u => u.role === 'admin' && u.login !== 'admin' && u.login !== 'piotr.pallach@crist.com.pl');
+            const isPiotr = userLogin.toLowerCase() === 'piotr.pallach@crist.com.pl';
             
             if (!foundUser) {
-                const isFirst = appUsers.length === 0 || (appUsers.length === 1 && appUsers[0].login === 'admin') || !hasRealAdmin;
+                // Nowy użytkownik w aplikacji. Usuwamy domyślne konto "admin", jeśli istnieje
+                appUsers = appUsers.filter(u => u.login !== 'admin');
+                
                 foundUser = { 
                     login: userLogin, 
                     name: isPiotr ? 'Piotr Pallach' : userLogin.split('@')[0], 
-                    role: (isFirst || isPiotr) ? 'admin' : 'user', 
+                    role: isPiotr ? 'admin' : 'user', 
                     allowedTabs: window.AVAILABLE_TABS.map(t => t.id) 
                 };
-                if (isFirst && appUsers.length === 1 && appUsers[0].login === 'admin') {
-                    appUsers = [];
-                }
+                
                 appUsers.push(foundUser);
-                window.autoSaveToDisk();
+                window.autoSaveToDisk(true); // Natychmiastowy zapis
             } else if (isPiotr && foundUser.role !== 'admin') {
-                foundUser.role = 'admin'; // Wymuszenie uprawnień admina dla Piotra
-                window.autoSaveToDisk();
-            } else if (!hasRealAdmin && foundUser.role !== 'admin' && !isPiotr) {
-                foundUser.role = 'admin';
-                window.autoSaveToDisk();
+                foundUser.role = 'admin'; // Zawsze wymuszaj admina dla Piotra, jeśli np. przypadkiem został usunięty
+                window.autoSaveToDisk(true);
             }
             
             currentUser = foundUser;
+            try { sessionStorage.setItem('loggedInUser', currentUser.login); } catch(e){}
             currentUser.lastLogin = new Date().toLocaleString('pl-PL');
 
             document.getElementById('loginOverlay').classList.add('hidden');
@@ -1566,9 +1581,10 @@
             if (addUserSec) addUserSec.classList.toggle('hidden', currentUser.role !== 'admin');
             
             updatePrintAuthor(currentUser.name || currentUser.login);
+            
+            window.renderUserPreferences();
             window.applyUserPermissions();
             window.checkAndShowAlertsOnLogin();
-            window.renderUserPreferences();
             
             renderHistoryTable(); renderInduscoTable(); renderUsersTable();
         };
@@ -1785,7 +1801,7 @@
             }
             
             window.applyUserPermissions();
-            window.autoSaveToDisk();
+            window.autoSaveToDisk(true); // Natychmiastowy zapis preferencji
             await window.customAlert("Twój widok zakładek został zaktualizowany.");
         };
 
@@ -1912,7 +1928,7 @@
             }
 
             window.renderUsersTable();
-            window.autoSaveToDisk();
+            window.autoSaveToDisk(true); // Natychmiastowy zapis w chmurze
             window.closeEditUserModal();
         };
 
@@ -1967,7 +1983,7 @@
                 document.getElementById('formNewUserAdmin').checked = false;
                 
                 renderUsersTable(); 
-                autoSaveToDisk();
+                autoSaveToDisk(true); // Wymuś natychmiastowy zapis
                 
                 await customAlert("Pomyślnie dodano użytkownika do listy. Jeśli konto z tym adresem jest utworzone w konsoli Firebase, użytkownik będzie mógł się teraz zalogować i uzyska dostęp.");
             } else if (pin !== null) await customAlert("Nieprawidłowy kod PIN.");
@@ -1978,7 +1994,7 @@
             const pin = await customPrompt("Podaj kod autoryzacji (PIN), aby usunąć użytkownika:", 'password');
             if (pin === "4321") {
                 if (appUsers[index].login === currentUser.login) { await customAlert("Nie możesz usunąć swojego własnego konta podczas bycia zalogowanym!"); return; }
-                appUsers.splice(index, 1); renderUsersTable(); autoSaveToDisk();
+                appUsers.splice(index, 1); renderUsersTable(); autoSaveToDisk(true);
             } else if (pin !== null) await customAlert("Nieprawidłowy kod PIN.");
         };
 
@@ -2032,7 +2048,7 @@
             const pt = paintTypes.find(p => p.id === id);
             if(pt) {
                 pt[field] = parseFloat(value.replace(',', '.')) || 0;
-                calculateCosts(); autoSaveToDisk();
+                calculateCosts(); autoSaveToDisk(true);
             }
         };
 
@@ -2052,7 +2068,7 @@
             
             document.getElementById('newPaintName').value = '';
             
-            renderPaintTypesTable(); updatePaintDropdowns(); window.updateRemanentAdjustments(); renderDailySidebar(); renderHistoryTable(); autoSaveToDisk();
+            renderPaintTypesTable(); updatePaintDropdowns(); window.updateRemanentAdjustments(); renderDailySidebar(); renderHistoryTable(); autoSaveToDisk(true); // Natychmiastowy zapis
         };
 
         window.removePaintType = async function(id) {
@@ -2066,7 +2082,7 @@
                     }
                 });
                 
-                renderPaintTypesTable(); updatePaintDropdowns(); window.updateRemanentAdjustments(); renderDailySidebar(); renderHistoryTable(); calculateCosts(); autoSaveToDisk();
+                renderPaintTypesTable(); updatePaintDropdowns(); window.updateRemanentAdjustments(); renderDailySidebar(); renderHistoryTable(); calculateCosts(); autoSaveToDisk(true);
             }
         };
 
@@ -2136,7 +2152,7 @@
             window.renderDailySidebar();
             window.renderDailyLedger();
             window.calculate(); 
-            window.autoSaveToDisk();
+            window.autoSaveToDisk(true); // Natychmiastowy zapis
         };
 
         window.getInduscoPaintsHtml = function() {
