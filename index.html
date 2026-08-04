@@ -183,9 +183,9 @@
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-black mb-1 uppercase">Hasło</label>
-                    <input type="password" id="loginPassword" class="w-full border-2 border-black p-2.5 text-sm outline-none focus:bg-gray-100 transition-colors" onkeypress="if(event.key === 'Enter') handleLogin()" autocomplete="current-password">
+                    <input type="password" id="loginPassword" class="w-full border-2 border-black p-2.5 text-sm outline-none focus:bg-gray-100 transition-colors" onkeypress="if(event.key === 'Enter') flashAndExecute('btnLogin', handleLogin)" autocomplete="current-password">
                 </div>
-                <button onclick="handleLogin()" class="w-full bg-black text-white font-bold uppercase py-3 border-2 border-black hover:bg-gray-800 transition shadow-md mt-6">
+                <button id="btnLogin" onclick="handleLogin()" class="w-full bg-black text-white font-bold uppercase py-3 border-2 border-black hover:bg-gray-800 transition shadow-md mt-6">
                     Zaloguj się
                 </button>
                 <div id="loginError" class="hidden text-white bg-red-600 border-2 border-red-800 p-2 font-bold text-xs text-center mt-4 uppercase">
@@ -528,22 +528,22 @@
                         </div>
                         <div id="formGruboscContainer" class="w-[calc(50%-0.25rem)] sm:w-[60px]">
                             <label class="block text-[10px] font-bold text-black mb-0.5 uppercase">Gr.[mm]</label>
-                            <input type="number" id="formGrubosc" step="0.1" min="0" class="w-full border border-black p-1 text-xs outline-none">
+                            <input type="number" id="formGrubosc" step="0.1" min="0" onkeypress="if(event.key === 'Enter') flashAndExecute('btnAddRow', addManualItem)" class="w-full border border-black p-1 text-xs outline-none">
                         </div>
                         <div id="formSzerokoscContainer" class="w-[calc(33%-0.33rem)] sm:w-[60px]">
                             <label class="block text-[10px] font-bold text-black mb-0.5 uppercase">Szer.[mm]</label>
-                            <input type="number" id="formSzerokosc" step="1" min="0" class="w-full border border-black p-1 text-xs outline-none">
+                            <input type="number" id="formSzerokosc" step="1" min="0" onkeypress="if(event.key === 'Enter') flashAndExecute('btnAddRow', addManualItem)" class="w-full border border-black p-1 text-xs outline-none">
                         </div>
                         <div class="w-[calc(33%-0.33rem)] sm:w-[60px]">
                             <label class="block text-[10px] font-bold text-black mb-0.5 uppercase">Dł.[mm]</label>
-                            <input type="number" id="formDlugosc" step="1" min="0" class="w-full border border-black p-1 text-xs outline-none">
+                            <input type="number" id="formDlugosc" step="1" min="0" onkeypress="if(event.key === 'Enter') flashAndExecute('btnAddRow', addManualItem)" class="w-full border border-black p-1 text-xs outline-none">
                         </div>
                         <div class="w-[calc(33%-0.33rem)] sm:w-[50px]">
                             <label class="block text-[10px] font-bold text-black mb-0.5 uppercase">Ilość</label>
-                            <input type="number" id="formIlosc" value="1" min="1" class="w-full border border-black p-1 text-xs outline-none">
+                            <input type="number" id="formIlosc" value="1" min="1" onkeypress="if(event.key === 'Enter') flashAndExecute('btnAddRow', addManualItem)" class="w-full border border-black p-1 text-xs outline-none">
                         </div>
                         <div class="w-full sm:w-auto flex-grow flex gap-1.5">
-                            <button onclick="addManualItem()" class="flex-1 bg-white text-black border border-black hover:bg-black hover:text-white font-bold py-1 px-3 transition-colors text-xs uppercase shadow-sm whitespace-nowrap">
+                            <button id="btnAddRow" onclick="addManualItem()" class="flex-1 bg-white text-black border border-black hover:bg-black hover:text-white font-bold py-1 px-3 transition-all duration-150 text-xs uppercase shadow-sm whitespace-nowrap">
                                 Dodaj wiersz
                             </button>
                         </div>
@@ -674,10 +674,18 @@
 
             <div class="overflow-x-auto bg-white border-x border-b border-black">
                 <table class="w-full text-left text-xs whitespace-nowrap">
-                    <thead class="bg-white text-black font-bold sticky top-0 uppercase border-b-2 border-black">
-                        <tr></tr>
+                    <thead class="bg-gray-100 text-black font-bold sticky top-0 border-b-2 border-black uppercase">
+                        <tr>
+                            <th class="px-3 py-2 border-r border-black">Jednostka / Projekt</th>
+                            <th class="px-3 py-2 border-r border-black">Rodzaj Farby</th>
+                            <th class="px-3 py-2 border-r border-black text-right">Zużycie Farby [L]</th>
+                            <th class="px-3 py-2 border-r border-black text-right">Rozcieńczalnik [L]</th>
+                            <th class="px-3 py-2 border-r border-black text-right">Udział [%]</th>
+                            <th class="px-3 py-2 text-right">Suma Zużycia [L]</th>
+                        </tr>
                     </thead>
-                    <tbody id="historyTableBody" class="divide-y divide-black bg-white"></tbody>
+                    <tbody id="paintReportTableBody" class="divide-y divide-black bg-white"></tbody>
+                    <tfoot id="paintReportTableFoot" class="bg-gray-100 font-bold sticky bottom-0 border-t-2 border-black uppercase"></tfoot>
                 </table>
             </div>
             
@@ -1110,7 +1118,23 @@
 
         window.hasUnsavedChanges = false;
         window.isSyncing = false;
-        let saveQueuePromise = Promise.resolve();
+        window.saveQueuePromise = Promise.resolve();
+
+        window.flashAndExecute = function(btnId, action) {
+            const btn = document.getElementById(btnId);
+            if (btn) {
+                btn.style.transform = 'scale(0.95)';
+                btn.style.opacity = '0.7';
+                btn.style.transition = 'all 0.15s ease';
+                setTimeout(() => {
+                    btn.style.transform = '';
+                    btn.style.opacity = '';
+                    if (action) action();
+                }, 150);
+            } else if (action) {
+                action();
+            }
+        };
 
         window.updateSyncUI = function(status) {
             const container = document.getElementById('cloudSyncStatus');
@@ -1338,13 +1362,13 @@
             if (immediate) {
                 clearTimeout(window.autoSaveTimeout);
                 // Czekamy na ewentualny trwający zapis i wykonujemy natychmiast nowy
-                saveQueuePromise = saveQueuePromise.then(doSave);
-                await saveQueuePromise;
+                window.saveQueuePromise = window.saveQueuePromise.then(doSave).catch(() => {});
+                await window.saveQueuePromise;
             } else {
                 clearTimeout(window.autoSaveTimeout);
                 // Opóźnienie 2s, dodajemy do kolejki
                 window.autoSaveTimeout = setTimeout(() => {
-                    saveQueuePromise = saveQueuePromise.then(doSave);
+                    window.saveQueuePromise = window.saveQueuePromise.then(doSave).catch(() => {});
                 }, 2000); 
             }
         };
@@ -3921,6 +3945,7 @@
 
             const units = {};
             let totalPaintAll = 0, totalThinnerAll = 0;
+            let totalPaintByBrand = {};
 
             printHistory.forEach(h => {
                 if (h.isError) return;
@@ -3943,6 +3968,10 @@
                                 
                                 totalPaintAll += (stat.vol || 0);
                                 totalThinnerAll += (stat.thinner || 0);
+
+                                if (!totalPaintByBrand[paintId]) totalPaintByBrand[paintId] = { paint: 0, thinner: 0 };
+                                totalPaintByBrand[paintId].paint += (stat.vol || 0);
+                                totalPaintByBrand[paintId].thinner += (stat.thinner || 0);
                             }
                         });
                     }
@@ -3953,7 +3982,7 @@
             const unitKeys = Object.keys(units).sort();
             
             if (unitKeys.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" class="px-3 py-4 text-center text-gray-500 font-bold uppercase">Brak zapisanych zużyć farb dla wybranego miesiąca.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="6" class="px-3 py-4 text-center text-gray-500 font-bold uppercase">Brak zapisanych zużyć farb dla wybranego miesiąca.</td></tr>`;
                 tfoot.innerHTML = '';
                 return;
             }
@@ -3970,26 +3999,49 @@
                     const rowSpanAttr = isFirst && paintKeys.length > 1 ? `rowspan="${paintKeys.length}"` : '';
                     const unitCellHtml = isFirst ? `<td ${rowSpanAttr} class="px-3 py-2 border-r border-b border-black font-bold text-black align-middle">${u}</td>` : '';
                     
+                    let percent = 0;
+                    if (totalPaintByBrand[paintId] && totalPaintByBrand[paintId].paint > 0) {
+                        percent = (data.paint / totalPaintByBrand[paintId].paint) * 100;
+                    }
+
                     tbody.innerHTML += `
                         <tr class="hover:bg-gray-50 transition-colors">
                             ${unitCellHtml}
                             <td class="px-3 py-2 border-r border-b border-black font-bold text-black">${paintId}</td>
                             <td class="px-3 py-2 border-r border-b border-black text-right text-blue-700 font-bold">${window.formatNumber(data.paint, 2)}</td>
                             <td class="px-3 py-2 border-r border-b border-black text-right text-yellow-600 font-bold">${window.formatNumber(data.thinner, 2)}</td>
+                            <td class="px-3 py-2 border-r border-b border-black text-right text-purple-700 font-bold">${window.formatNumber(percent, 1)}%</td>
                             <td class="px-3 py-2 border-b border-black text-right font-bold text-green-700">${window.formatNumber(data.paint + data.thinner, 2)}</td>
                         </tr>
                     `;
                 });
             });
 
-            tfoot.innerHTML = `
-                <tr>
-                    <td colspan="2" class="px-3 py-2 border-r border-black text-right">SUMA CAŁKOWITA [L]:</td>
-                    <td class="px-3 py-2 border-r border-black text-right text-blue-800">${window.formatNumber(totalPaintAll, 2)}</td>
-                    <td class="px-3 py-2 border-r border-black text-right text-yellow-700">${window.formatNumber(totalThinnerAll, 2)}</td>
-                    <td class="px-3 py-2 text-right text-green-800">${window.formatNumber(totalPaintAll + totalThinnerAll, 2)}</td>
+            let footerHtml = '';
+            const brandKeys = Object.keys(totalPaintByBrand).sort();
+            brandKeys.forEach(bId => {
+                const bData = totalPaintByBrand[bId];
+                footerHtml += `
+                    <tr class="bg-gray-100 border-t border-black">
+                        <td colspan="2" class="px-3 py-1.5 border-r border-black text-right font-bold text-gray-700">PODSUMOWANIE: ${bId}</td>
+                        <td class="px-3 py-1.5 border-r border-black text-right font-bold text-blue-800">${window.formatNumber(bData.paint, 2)}</td>
+                        <td class="px-3 py-1.5 border-r border-black text-right font-bold text-yellow-700">${window.formatNumber(bData.thinner, 2)}</td>
+                        <td class="px-3 py-1.5 border-r border-black text-right font-bold text-purple-800">100.0%</td>
+                        <td class="px-3 py-1.5 text-right font-bold text-green-800">${window.formatNumber(bData.paint + bData.thinner, 2)}</td>
+                    </tr>
+                `;
+            });
+
+            footerHtml += `
+                <tr class="border-t-2 border-black bg-gray-200">
+                    <td colspan="2" class="px-3 py-2 border-r border-black text-right font-bold text-black">SUMA CAŁKOWITA MIESIĄCA [L]:</td>
+                    <td class="px-3 py-2 border-r border-black text-right text-black font-bold">${window.formatNumber(totalPaintAll, 2)}</td>
+                    <td class="px-3 py-2 border-r border-black text-right text-black font-bold">${window.formatNumber(totalThinnerAll, 2)}</td>
+                    <td class="px-3 py-2 border-r border-black text-right text-black font-bold">-</td>
+                    <td class="px-3 py-2 text-right text-black font-bold">${window.formatNumber(totalPaintAll + totalThinnerAll, 2)}</td>
                 </tr>
             `;
+            tfoot.innerHTML = footerHtml;
         };
     </script>
 </body>
