@@ -3480,6 +3480,50 @@
 
         window.filterDbTable = function() { window.renderDbTable(); };
 
+        window.addManualDbItem = async function() {
+            const cat = document.getElementById('formDbKategoria').value;
+            const nazwaInput = document.getElementById('formDbNazwa').value.trim().toUpperCase();
+            const mnoznikInput = document.getElementById('formDbMnoznik').value.replace(/[\s\u00A0]/g, '').replace(',', '.');
+            
+            if (!nazwaInput) { 
+                await customAlert("Podaj nazwę elementu (profilu)!"); 
+                return; 
+            }
+            
+            const mnoznik = parseFloat(mnoznikInput);
+            if (isNaN(mnoznik) || mnoznik <= 0) { 
+                await customAlert("Podaj prawidłowy mnożnik większy od zera!"); 
+                return; 
+            }
+
+            // Zabezpieczenie klucza bazy przed niedozwolonymi znakami Firebase (. $ # [ ] /)
+            const bezpiecznaNazwa = nazwaInput.replace(/[\.\$#\[\]\/]/g, ',');
+
+            if (!database[cat]) {
+                database[cat] = {};
+            }
+
+            if (database[cat][bezpiecznaNazwa] !== undefined) {
+                if (!(await customConfirm(`Profil ${bezpiecznaNazwa} już istnieje w kategorii ${cat}. Czy chcesz zaktualizować jego mnożnik?`))) {
+                    return;
+                }
+            }
+
+            // Zapis do obiektu bazy
+            database[cat][bezpiecznaNazwa] = mnoznik;
+            
+            // Wyczyść inputy formularza
+            document.getElementById('formDbNazwa').value = '';
+            document.getElementById('formDbMnoznik').value = '';
+            
+            // Odśwież UI i wymuś natychmiastowy zapis
+            window.renderDbTable();
+            window.updateProfilSelect();
+            window.autoSaveToDisk(true);
+            
+            await customAlert(`Zapisano profil: ${bezpiecznaNazwa}`);
+        };
+
         window.updateDbMultiplier = async function(cat, key, value) {
             const cleanValue = value.replace(/[\s\u00A0]/g, '').replace(',', '.');
             const num = parseFloat(cleanValue);
