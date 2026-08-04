@@ -653,44 +653,36 @@
                 </div>
 
                 <div class="p-3 border-b border-black grid grid-cols-1 md:grid-cols-4 gap-3 bg-white">
-                    <div>
-                        <label class="block text-xs font-bold text-black mb-1 uppercase">Data Od</label>
-                        <input type="date" id="histFilterDateFrom" onchange="renderHistoryTable()" class="w-full border border-black p-1 text-sm outline-none bg-white">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-black mb-1 uppercase">Data Do</label>
-                        <input type="date" id="histFilterDateTo" onchange="renderHistoryTable()" class="w-full border border-black p-1 text-sm outline-none bg-white">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-black mb-1 uppercase">Projekt</label>
-                        <input type="text" id="histFilterUnit" oninput="renderHistoryTable()" placeholder="Szukaj..." class="w-full border border-black p-1 text-sm outline-none">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-black mb-1 uppercase">Typ farby</label>
-                        <select id="histFilterPaint" onchange="renderHistoryTable()" class="w-full border border-black p-1 text-sm outline-none bg-white"></select>
-                    </div>
+                <div>
+                    <label class="block text-xs font-bold text-black mb-1 uppercase">Data Od</label>
+                    <input type="date" id="histFilterDateFrom" onchange="renderHistoryTable()" class="w-full border border-black p-1 text-sm outline-none bg-white">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-black mb-1 uppercase">Data Do</label>
+                    <input type="date" id="histFilterDateTo" onchange="renderHistoryTable()" class="w-full border border-black p-1 text-sm outline-none bg-white">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-black mb-1 uppercase">Projekt</label>
+                    <input type="text" id="histFilterUnit" oninput="renderHistoryTable()" placeholder="Szukaj..." class="w-full border border-black p-1 text-sm outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-black mb-1 uppercase">Typ farby</label>
+                    <select id="histFilterPaint" onchange="renderHistoryTable()" class="w-full border border-black p-1 text-sm outline-none bg-white"></select>
                 </div>
             </div>
+        </div>
 
-            <div class="overflow-x-auto bg-white border-x border-b border-black">
-                <table class="w-full text-left text-xs whitespace-nowrap">
-                    <thead class="bg-gray-100 text-black font-bold sticky top-0 border-b-2 border-black uppercase">
-                        <tr>
-                            <th class="px-3 py-2 border-r border-black">Jednostka / Projekt</th>
-                            <th class="px-3 py-2 border-r border-black">Rodzaj Farby</th>
-                            <th class="px-3 py-2 border-r border-black text-right">Zużycie Farby [L]</th>
-                            <th class="px-3 py-2 border-r border-black text-right">Rozcieńczalnik [L]</th>
-                            <th class="px-3 py-2 border-r border-black text-right">Udział [%]</th>
-                            <th class="px-3 py-2 text-right">Suma Zużycia [L]</th>
-                        </tr>
-                    </thead>
-                    <tbody id="paintReportTableBody" class="divide-y divide-black bg-white"></tbody>
-                    <tfoot id="paintReportTableFoot" class="bg-gray-100 font-bold sticky bottom-0 border-t-2 border-black uppercase"></tfoot>
-                </table>
-            </div>
-            
-            <div class="protocol-footer print-history-only" style="padding-bottom: 20px;">
-                <div class="sign-line">Sporządził<span class="protocol-author text-black text-[11px] font-normal normal-case block mt-1"></span></div>
+        <div class="overflow-x-auto bg-white border-x border-b border-black">
+            <table class="w-full text-left text-xs whitespace-nowrap">
+                <thead class="bg-white text-black font-bold sticky top-0 uppercase border-b-2 border-black">
+                    <tr></tr>
+                </thead>
+                <tbody id="historyTableBody" class="divide-y divide-black bg-white"></tbody>
+            </table>
+        </div>
+        
+        <div class="protocol-footer print-history-only" style="padding-bottom: 20px;">
+            <div class="sign-line">Sporządził<span class="protocol-author text-black text-[11px] font-normal normal-case block mt-1"></span></div>
                 <div class="sign-line">Zatwierdził<span class="text-black text-[11px] font-normal normal-case block mt-1"></span></div>
             </div>
         </div>
